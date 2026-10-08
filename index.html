@@ -66,24 +66,10 @@ function resize() {
     buttonRect.x = (canvas.width - buttonRect.w) / 2;
     buttonRect.y = (canvas.height / 2) + (50 * scale);
 
-    if (targets.length === 0) {
-        initTargets();
-    } else {
-        const startX = canvas.width - (350 * scale);
-        const boxW = 55 * scale;
-        const boxH = 65 * scale;
-        targets = [
-            { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: targets[0] ? targets[0].alive : true },
-            { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: targets[1] ? targets[1].alive : true },
-            { x: startX + (boxW / 2) + (7 * scale), y: groundY - (boxH * 2) - (5 * scale), width: boxW, height: boxH, alive: targets[2] ? targets[2].alive : true }
-        ];
-    }
-}
-
-function initTargets() {
     const startX = canvas.width - (350 * scale);
     const boxW = 55 * scale;
     const boxH = 65 * scale;
+    
     targets = [
         { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
         { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
@@ -101,7 +87,7 @@ function getMousePos(e) {
         clientX = e.changedTouches[0].clientX;
         clientY = e.changedTouches[0].clientY;
     }
-    return { x: clientX, y: clientY };
+    return { x: clientX || 0, y: clientY || 0 };
 }
 
 function handleStart(e) {
@@ -113,7 +99,6 @@ function handleStart(e) {
             birdsLeft = 3;
             gameState = "PLAYING";
             bird.isLaunched = false;
-            initTargets();
             resize();
         }
     } else if (gameState === "PLAYING" && !bird.isLaunched && birdsLeft > 0) {
@@ -148,8 +133,8 @@ window.addEventListener("mousedown", handleStart);
 window.addEventListener("mousemove", handleMove);
 window.addEventListener("mouseup", handleEnd);
 
-window.addEventListener("touchstart", function(e) { handleStart(e); }, { passive: false });
-window.addEventListener("touchmove", function(e) { handleMove(e); }, { passive: false });
+window.addEventListener("touchstart", function(e) { handleStart(e); }, { passive: true });
+window.addEventListener("touchmove", function(e) { handleMove(e); }, { passive: true });
 window.addEventListener("touchend", handleEnd);
 
 window.addEventListener("resize", resize);
@@ -283,21 +268,24 @@ function update() {
         }
 
         if (!bird.isLaunched || (bird.isLaunched && bird.y + bird.radius < groundY)) {
-ctx.fillStyle = "#ff3333";
-ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
-}
-let allDead = true;
-targets.forEach(t => {
-if (t.alive) {
-allDead = false;
-let closestX = Math.max(t.x, Math.min(bird.x, t.x + t.width));
-let closestY = Math.max(t.y, Math.min(bird.y, t.y + t.height));
-let distance = Math.hypot(bird.x - closestX, bird.y - closestY);
-if (distance < bird.radius && bird.isLaunched) {
-t.alive = false;
-score += 100;
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        let allDead = true;
+        targets.forEach(t => {
+            if (t.alive) {
+                allDead = false;
+                
+                let closestX = Math.max(t.x, Math.min(bird.x, t.x + t.width));
+                let closestY = Math.max(t.y, Math.min(bird.y, t.y + t.height));
+                let distance = Math.hypot(bird.x - closestX, bird.y - closestY);
+                
+                if (distance < bird.radius && bird.isLaunched) {
+                    t.alive = false;
+                    score += 100;
 }
 ctx.fillStyle = "#8ddb44";
 ctx.fillRect(t.x, t.y, t.width, t.height);
