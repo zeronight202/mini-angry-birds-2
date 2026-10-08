@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds</title>
+    <title>Angry Birds Fix</title>
     <style>
         body, html {
             margin: 0;
@@ -78,14 +78,17 @@ function resize() {
 }
 
 function getMousePos(e) {
-    let clientX = e.clientX;
-    let clientY = e.clientY;
+    let clientX = 0;
+    let clientY = 0;
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
     } else if (e.changedTouches && e.changedTouches.length > 0) {
         clientX = e.changedTouches[0].clientX;
         clientY = e.changedTouches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
     }
     return { x: clientX || 0, y: clientY || 0 };
 }
@@ -284,8 +287,8 @@ function update() {
                 let distance = Math.hypot(bird.x - closestX, bird.y - closestY);
                 
                 if (distance < bird.radius && bird.isLaunched) {
-                    t.alive = false;
-                    score += 100;
+t.alive = false;
+score += 100;
 }
 ctx.fillStyle = "#8ddb44";
 ctx.fillRect(t.x, t.y, t.width, t.height);
