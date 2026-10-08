@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds Mini Clone với Menu</title>
+    <title>Angry Birds Mini Fullscreen Fix</title>
     <style>
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background: #222;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
             font-family: 'Arial', sans-serif;
-            color: white;
-            overflow: hidden;
-            position: relative;
         }
         #gameContainer {
             position: relative;
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
         }
         canvas {
             background: #70c5ce;
@@ -29,46 +28,34 @@
             width: 100%;
             height: 100%;
         }
-        #ui {
-            position: absolute;
-            top: 20px;
-            width: 90%;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            justify-content: space-between;
-            font-size: 24px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 5;
-            text-shadow: 1px 1px 3px black;
-        }
         .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 10;
-            transition: all 0.3s ease;
+            color: white;
+            text-align: center;
+            padding: 20px;
         }
         .overlay h1 {
             font-size: 48px;
-            margin-bottom: 20px;
+            margin: 0 0 20px 0;
             color: #ff3333;
             text-shadow: 2px 2px 5px black;
         }
         .overlay p {
             font-size: 20px;
-            margin-bottom: 30px;
+            margin: 0 0 30px 0;
         }
         .btn {
-            padding: 12px 35px;
+            padding: 15px 40px;
             font-size: 22px;
             font-weight: bold;
             background: #8ddb44;
@@ -94,19 +81,17 @@
 <body>
 
     <div id="gameContainer">
-        <div id="ui" class="hidden">
-            <div>Điểm: <span id="score">0</span></div>
-        </div>
-
+        <!-- MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
-            <p>Kéo và thả chú chim màu đỏ để phá hủy các khối hộp!</p>
+            <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
             <button class="btn" onclick="startGame()">CHƠI NGAY</button>
         </div>
 
+        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
-            <p id="finalText">Tổng số điểm của bạn: <span id="finalScore">0</span></p>
+            <p id="finalText">Tổng số điểm của bạn: 0</p>
             <button class="btn" onclick="restartGame()">CHƠI LẠI</button>
         </div>
 
@@ -116,37 +101,25 @@
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const ui = document.getElementById("ui");
 
 const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
-const finalScoreEl = document.getElementById("finalScore");
 const finalText = document.getElementById("finalText");
 
 let gameState = "MENU"; 
 let score = 0;
 let lives = 3;
-let groundY = window.innerHeight * 0.85;
+let groundY = 0;
 
-let sling = { x: 150, y: groundY - 70, radius: 15 };
-
-let bird = {
-    x: sling.x,
-    y: sling.y,
-    radius: 15,
-    vx: 0,
-    vy: 0,
-    isDragging: false,
-    isLaunched: false
-};
-
+let sling = { x: 0, y: 0, radius: 15 };
+let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
 let targets = [];
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    
     groundY = canvas.height * 0.85;
     sling.x = canvas.width * 0.18;
     if (sling.x < 150) sling.x = 150;
@@ -171,19 +144,17 @@ function startGame() {
     gameState = "PLAYING";
     score = 0;
     lives = 3;
-    scoreEl.textContent = score;
+    
     resizeCanvas();
     initTargets();
     resetBird();
     
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
-    ui.classList.remove("hidden");
 }
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
-    ui.classList.add("hidden");
     gameOverScreen.classList.remove("hidden");
     
     if (isWin) {
@@ -203,18 +174,17 @@ function restartGame() {
 
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
     }
+    
     return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        x: (clientX || 0) - rect.left,
+        y: (clientY || 0) - rect.top
     };
 }
 
@@ -222,7 +192,7 @@ function startDrag(e) {
     if (gameState !== "PLAYING" || bird.isLaunched || lives <= 0) return;
     const pos = getMousePos(e);
     const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-    if (dist < bird.radius + 20) {
+    if (dist < bird.radius + 25) {
         bird.isDragging = true;
     }
 }
@@ -296,6 +266,11 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
+
         for (let i = 0; i < lives; i++) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
@@ -348,24 +323,29 @@ function update() {
                 if (checkCollision(bird, t)) {
                     t.alive = false;
                     score += 100;
-                    scoreEl.textContent = score;
                 }
                 ctx.fillStyle = "#8ddb44";
                 ctx.fillRect(t.x, t.y, t.width, t.height);
                 ctx.strokeStyle = "#558822";
                 ctx.strokeRect(t.x, t.y, t.width, t.height);
-                }
-});
-                if (allDead && targets.length > 0) {
-                endGame(true);
-                }             
-} else {
-                ctx.fillStyle = "#ff3333";
-                ctx.beginPath();
-                ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
-                ctx.fill();
-                }
-                requestAnimationFrame(update);
-                }
-                resizeCanvas();
-                update();
+            }
+        });
+
+        if (allDead && targets.length > 0) {
+            endGame(true);
+        }
+    } else {
+        ctx.fillStyle = "#ff3333";
+        ctx.beginPath();
+        ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    requestAnimationFrame(update);
+}
+
+resizeCanvas();
+update();
+</script>
+</body>
+</html>
