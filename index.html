@@ -1,1 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angry Birds Mini Clone</title>
+    <style>
+        body {
+            margin: 0;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        canvas {
+            background: #70c5ce;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">Điểm: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+
+let score = 0;
+const groundY = 350;
+
+// Khởi tạo Súng cao su (Sling)
+const sling = { x: 150, y: 280, radius: 15 };
+
+// Khởi tạo Chim (Bird)
+let bird = {
+    x: sling.x,
+    y: sling.y,
+    radius: 15,
+    vx: 0,
+    vy: 0,
+    isDragging: false,
+    isLaunched: false
+};
+
+// Khởi tạo Mục tiêu / Heo (Targets)
+let targets = [
+    { x: 600, y: 300, width: 40, height: 50, alive: true },
+    { x: 650, y: 300, width: 40, height: 50, alive: true },
+    { x: 625, y: 250, width: 40, height: 50, alive: true }
+];
+
+// Xử lý sự kiện chuột / cảm ứng
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+    };
+}
+
+function startDrag(e) {
+    if (bird.isLaunched) return;
+    const pos = getMousePos(e);
+    const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
+    if (dist < bird.radius + 10) {
+        bird.isDragging = true;
+    }
+}
+
+function drag(e) {
+    if (!bird.isDragging) return;
+    const pos = getMousePos(e);
+    
+    // Giới hạn khoảng cách kéo tối đa của súng cao su
+    const distX = pos.x - sling.x;
+    const distY = pos.y - sling.y;
+    const angle = Math.atan2(distY, distX);
+    const dist = Math.min(Math.hypot(distX, distY), 80);
+
+    bird.x = sling.x + Math.cos(angle) * dist;
+    bird.y = sling.y + Math.sin(angle) * dist;
+}
+
+function endDrag() {
+    if (!bird.isDragging) return;
+    bird.isDragging = false;
+    bird.isLaunched = true;
+
+    // Tính toán lực bắn dựa trên khoảng cách kéo ngược
+    bird.vx = (sling.x - bird.x) * 0.15;
+    bird.vy = (sling.y - bird.y) * 0.15;
+}
+
+canvas.addEventListener("mousedown", startDrag);
+canvas.addEventListener("mousemove", drag);
+window.addEventListener("mouseup", endDrag);
+
+canvas.addEventListener("touchstart", startDrag);
+canvas.addEventListener("touchmove", drag);
+window.addEventListener("touchend", endDrag);
+
+// Hàm reset khi chim bay ra ngoài hoặc dừng lại
+function resetBird() {
+    bird.x = sling.x;
+    bird.y = sling.y;
+    bird.vx = 0;
+    bird.vy = 0;
+    bird.isLaunched = false;
+}
+
+// Kiểm tra va chạm giữa Chim (Hình tròn) và Hộp (Hình chữ nhật)
+function checkCollision(b, t) {
+    if (!t.alive) return false;
+    let closestX = Math.max(t.x, Math.min(b.x, t.x + t.width));
+    let closestY = Math.max(t.y, Math.min(b.y, t.y + t.height));
+    let distance = Math.hypot(b.x - closestX, b.y - closestY);
+    return distance < b.radius;
+}
+
+// Vòng lặp chính cập nhật và vẽ game
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Vẽ mặt đất
+    ctx.fillStyle = "#654321";
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+    // Vẽ súng cao su
+    ctx.strokeStyle = "#4a2c11";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(sling.x, sling.y);
+    if (bird.isDragging) {
+        ctx.lineTo(bird.x, bird.y);
+    } else {
+        ctx.lineTo(sling.x, groundY);
+    }
+    ctx.stroke();
+
+    // Cập nhật trạng thái vật lý của chim
+    if (bird.isLaunched) {
+        bird.x += bird.vx;
+        bird.y += bird.vy;
+        bird.vy += 0.2; // Trọng lực vật lý
+
+        // Va chạm mặt đất
+        if (bird.y + bird.radius >= groundY) {
+            resetBird();
+        }
+        // Bay ra khỏi biên giới hạn trái/phải
+        if (bird.x > canvas.width || bird.x < 0) {
+            resetBird();
+        }
+    }
+
+    // Vẽ Chim (Màu đỏ)
+    ctx.fillStyle = "#ff3333";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cập nhật và vẽ các mục tiêu (Heo xanh dưới dạng khối hộp)
+    let allDead = true;
+    targets.forEach(t => {
+        if (t.alive) {
+            allDead = false;
+            if (checkCollision(bird, t)) {
+                t.alive = false;
+                score += 100;
+                scoreEl.textContent = score;
+            }
+            ctx.fillStyle = "#8ddb44";
+            ctx.fillRect(t.x, t.y, t.width, t.height);
+            ctx.strokeStyle = "#558822";
+            ctx.strokeRect(t.x, t.y, t.width, t.height);
+        }
+    });
+
+    // Hồi sinh mục tiêu nếu bị phá hủy hết
+    if (allDead) {
+        targets.forEach(t => t.alive = true);
+    }
+
+    requestAnimationFrame(update);
+}
+
+update();
+</script>
+</body>
+</html>
 
