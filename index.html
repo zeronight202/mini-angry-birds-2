@@ -96,7 +96,6 @@
     <div id="gameContainer">
         <div id="ui" class="hidden">
             <div>Điểm: <span id="score">0</span></div>
-            <div>Số mạng còn lại: <span id="lives">3</span></div>
         </div>
 
         <div id="startScreen" class="overlay">
@@ -118,7 +117,6 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
-const livesEl = document.getElementById("lives");
 const ui = document.getElementById("ui");
 
 const startScreen = document.getElementById("startScreen");
@@ -174,7 +172,6 @@ function startGame() {
     score = 0;
     lives = 3;
     scoreEl.textContent = score;
-    livesEl.textContent = lives;
     resizeCanvas();
     initTargets();
     resetBird();
@@ -207,13 +204,13 @@ function restartGame() {
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     return {
-        x: (e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0)) - rect.left,
-        y: (e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0)) - rect.top
+        x: (e.clientX || (e.touches && e.touches.length > 0 ? e.touches.clientX : 0)) - rect.left,
+        y: (e.clientY || (e.touches && e.touches.length > 0 ? e.touches.clientY : 0)) - rect.top
     };
 }
 
 function startDrag(e) {
-    if (gameState !== "PLAYING" || bird.isLaunched) return;
+    if (gameState !== "PLAYING" || bird.isLaunched || lives <= 0) return;
     const pos = getMousePos(e);
     const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
     if (dist < bird.radius + 20) {
@@ -243,7 +240,6 @@ function endDrag() {
     bird.vy = (sling.y - bird.y) * 0.15;
     
     lives--;
-    livesEl.textContent = lives;
 }
 
 canvas.addEventListener("mousedown", startDrag);
@@ -291,6 +287,13 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
+        for (let i = 0; i < lives; i++) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(sling.x - 40 - (i * 35), groundY - bird.radius, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         if (bird.isDragging) {
             ctx.strokeStyle = "#4a2c11";
             ctx.lineWidth = 6;
@@ -317,10 +320,17 @@ function update() {
             }
         }
 
-        ctx.fillStyle = "#ff3333";
-        ctx.beginPath();
-        ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (!bird.isLaunched && lives >= 0) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         let allDead = true;
         targets.forEach(t => {
@@ -336,23 +346,17 @@ function update() {
                 ctx.strokeStyle = "#558822";
                 ctx.strokeRect(t.x, t.y, t.width, t.height);
             }
-        });
-
-        if (allDead && targets.length > 0) {
-            endGame(true);
-        }
-    } else {
-        ctx.fillStyle = "#ff3333";
-        ctx.beginPath();
-        ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    requestAnimationFrame(update);
+});
+if (allDead && targets.length > 0) {
+endGame(true);
 }
-
+} else {
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
+}
+requestAnimationFrame(update);
+}
 resizeCanvas();
 update();
-</script>
-</body>
-</html>
