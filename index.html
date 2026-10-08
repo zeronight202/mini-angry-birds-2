@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds Full Screen</title>
+    <title>Angry Birds Full Screen Fix</title>
     <style>
         * {
             box-sizing: border-box;
@@ -23,8 +23,8 @@
         }
         #gameContainer {
             position: relative;
-            width: 100vw; /* Toàn màn hình theo chiều rộng trình duyệt */
-            height: 100vh; /* Toàn màn hình theo chiều cao trình duyệt */
+            width: 100vw;
+            height: 100vh;
             background: #70c5ce;
         }
         canvas {
@@ -32,19 +32,17 @@
             width: 100%;
             height: 100%;
         }
-        /* Giao diện UI Điểm */
         #ui {
             position: absolute;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: clamp(24px, 4vw, 36px); /* Tự động phóng to chữ trên màn hình lớn */
+            font-size: clamp(24px, 4vw, 36px);
             font-weight: bold;
             pointer-events: none;
             z-index: 5;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
-        /* Các màn hình Menu Overlay bao phủ toàn màn hình */
         .overlay {
             position: absolute;
             top: 0;
@@ -100,17 +98,16 @@
 <body>
 
     <div id="gameContainer">
-        <!-- Điểm số -->
         <div id="ui" class="hidden">Điểm: <span id="score">0</span></div>
 
-        <!-- MÀN HÌNH MENU BẮT ĐẦU -->
+        <!-- MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Kéo và thả chú chim màu đỏ để phá hủy các khối hộp!</p>
             <button class="btn" onclick="startGame()">CHƠI NGAY</button>
         </div>
 
-        <!-- MÀN HÌNH KẾT THÚC / CHIẾN THẮNG -->
+        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p>Tổng số điểm của bạn: <span id="finalScore">0</span></p>
@@ -134,35 +131,33 @@ const finalScoreEl = document.getElementById("finalScore");
 let gameState = "MENU"; 
 let score = 0;
 
-// Kích thước chuẩn để tính toán tỷ lệ vật lý (Logic Resolution)
+// Hệ thống tỷ lệ hiển thị
 const BASE_WIDTH = 1200;
 const BASE_HEIGHT = 600;
 let scale = 1;
 
-// Biến môi trường/vật lý dựa theo tỷ lệ
 let groundY;
 let sling;
 let bird;
 let targets = [];
 
-// Hàm cập nhật kích thước Canvas theo kích thước trình duyệt
+// Hàm thiết lập chuẩn kích cỡ màn hình
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // Tính toán tỷ lệ co giãn dựa trên chiều rộng
-    scale = canvas.width / BASE_WIDTH;
-    
-    // Khởi tạo lại các mốc tọa độ dựa theo kích thước mới
-    groundY = canvas.height - (100 * scale);
-    
-    // Giữ vị trí súng cao su cố định theo tỷ lệ màn hình
-    sling = { x: 200 * scale, y: groundY - (80 * scale), radius: 18 * scale };
+    // Tính toán tỷ lệ dựa trên cả chiều rộng và chiều cao để không bị mất vật thể
+    const scaleX = canvas.width / BASE_WIDTH;
+    const scaleY = canvas.height / BASE_HEIGHT;
+    scale = Math.min(scaleX, scaleY);
+    if (scale < 0.5) scale = 0.5; // Giới hạn không cho thu quá nhỏ
+
+    groundY = canvas.height - (80 * scale);
+    sling = { x: 200 * scale, y: groundY - (120 * scale), radius: 18 * scale };
     
     if (!bird || !bird.isLaunched) {
         resetBird();
     } else {
-        // Co giãn kích thước chim nếu đang bay
         bird.radius = 18 * scale;
     }
 }
@@ -180,27 +175,27 @@ function resetBird() {
 }
 
 function initTargets() {
-    // Sắp xếp lại mục tiêu theo kim tự tháp dựa trên tỷ lệ màn hình mới
     const startX = canvas.width - (350 * scale);
     const boxW = 50 * scale;
     const boxH = 60 * scale;
     
+    // Khởi tạo các khối hộp xếp chồng lên nhau hình kim tự tháp
     targets = [
-        // Tầng 1 (Dưới đất)
         { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
-        { x: startX + boxW + (10 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
-        // Tầng 2
-        { x: startX + (boxW / 2) + (5 * scale), y: groundY - (boxH * 2), width: boxW, height: boxH, alive: true }
+        { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
+        { x: startX + (boxW / 2) + (7 * scale), y: groundY - (boxH * 2) - (5 * scale), width: boxW, height: boxH, alive: true }
     ];
 }
 
-// Quản lý trạng thái Game
 function startGame() {
     gameState = "PLAYING";
     score = 0;
     scoreEl.textContent = score;
+    
+    // Cập nhật kích thước trước khi xếp mục tiêu
     resizeCanvas();
     initTargets();
+    resetBird();
     
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
@@ -226,12 +221,14 @@ function restartGame() {
     startGame();
 }
 
-// Xử lý sự kiện kéo thả chuột và cảm ứng màn hình
+// Xử lý kéo thả chuột và cảm ứng cảm ứng tốt hơn
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
     return {
-        x: (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left,
-        y: (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top
+        x: clientX - rect.left,
+        y: clientY - rect.top
     };
 }
 
@@ -239,7 +236,7 @@ function startDrag(e) {
     if (gameState !== "PLAYING" || bird.isLaunched) return;
     const pos = getMousePos(e);
     const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-    if (dist < bird.radius + (15 * scale)) {
+    if (dist < bird.radius + (30 * scale)) { // Tăng vùng chạm để dễ kéo hơn trên điện thoại
         bird.isDragging = true;
     }
 }
@@ -251,8 +248,7 @@ function drag(e) {
     const distX = pos.x - sling.x;
     const distY = pos.y - sling.y;
     const angle = Math.atan2(distY, distX);
-    // Giới hạn tầm kéo giãn dựa theo tỷ lệ màn hình
-    const dist = Math.min(Math.hypot(distX, distY), 100 * scale);
+    const dist = Math.min(Math.hypot(distX, distY), 120 * scale);
 
     bird.x = sling.x + Math.cos(angle) * dist;
     bird.y = sling.y + Math.sin(angle) * dist;
@@ -263,7 +259,6 @@ function endDrag() {
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    // Lực bắn tính theo tỷ lệ scale để chim bay mượt mà như nhau trên mọi màn hình
     bird.vx = (sling.x - bird.x) * 0.15;
     bird.vy = (sling.y - bird.y) * 0.15;
 }
@@ -276,10 +271,10 @@ canvas.addEventListener("touchstart", startDrag, { passive: true });
 canvas.addEventListener("touchmove", drag, { passive: true });
 window.addEventListener("touchend", endDrag);
 
-// Lắng nghe sự kiện thay đổi kích thước trình duyệt
 window.addEventListener("resize", () => {
+    resizeCanvas();
     if (gameState === "PLAYING") {
-        resizeCanvas();
+        initTargets();
     }
 });
 
@@ -291,15 +286,15 @@ function checkCollision(b, t) {
     return distance < b.radius;
 }
 
-// Vòng lặp đồ họa chính
+// Vòng lặp vẽ liên tục
 function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Vẽ bầu trời (Nền canvas) và Mặt đất
+    // Vẽ mặt đất nền
     ctx.fillStyle = "#654321";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-    // Vẽ trụ súng cao su cơ bản
+    // Vẽ trụ súng cao su
     ctx.strokeStyle = "#4a2c11";
     ctx.lineWidth = 8 * scale;
     ctx.beginPath();
@@ -308,21 +303,18 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
-        // Vẽ dây súng cao su khi kéo bắn
-        if (bird.isDragging) {
-            ctx.strokeStyle = "#4a2c11";
-            ctx.lineWidth = 6 * scale;
-            ctx.beginPath();
-            ctx.moveTo(sling.x, sling.y);
-            ctx.lineTo(bird.x, bird.y);
-            ctx.stroke();
-        }
+        // Vẽ dây súng cao su khi kéo
+        ctx.strokeStyle = "#4a2c11";
+        ctx.lineWidth = 5 * scale;
+        ctx.beginPath();
+        ctx.moveTo(sling.x, sling.y);
+        ctx.lineTo(bird.x, bird.y);
+        ctx.stroke();
 
-        // Vật lý bay của chim
         if (bird.isLaunched) {
             bird.x += bird.vx;
             bird.y += bird.vy;
-            bird.vy += 0.25 * scale; // Trọng lực co giãn theo tỷ lệ
+            bird.vy += 0.25; // Trọng lực ổn định
 
             if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
                 resetBird();
@@ -335,20 +327,20 @@ function update() {
         ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Vẽ các khối hộp mục tiêu
-let allDead = true;
-targets.forEach(t => {
-if (t.alive) {
-allDead = false;
-if (checkCollision(bird, t)) {
-t.alive = false;
-score += 100;
-scoreEl.textContent = score;
-}
-ctx.fillStyle = "#8ddb44";
-ctx.fillRect(t.x, t.y, t.width, t.height);
-ctx.strokeStyle = "#558822";
-ctx.lineWidth = 2 * scale;
+        // Vẽ Khối hộp mục tiêu
+        let allDead = true;
+        targets.forEach(t => {
+            if (t.alive) {
+                allDead = false;
+                if (checkCollision(bird, t)) {
+                    t.alive = false;
+                    score += 100;
+                    scoreEl.textContent = score;
+                }
+                ctx.fillStyle = "#8ddb44";
+                ctx.fillRect(t.x, t.y, t.width, t.height);
+                ctx.strokeStyle = "#558822";
+                ctx.lineWidth = 2 * scale;
 ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
 });
@@ -356,7 +348,7 @@ if (allDead && targets.length > 0) {
 endGame(true);
 }
 } else {
-// Vẽ chim chờ ở Menu ngoài
+// Chim đậu trên súng ở màn hình Menu
 ctx.fillStyle = "#ff3333";
 ctx.beginPath();
 ctx.arc(sling.x, sling.y, 18 * scale, 0, Math.PI * 2);
@@ -364,7 +356,6 @@ ctx.fill();
 }
 requestAnimationFrame(update);
 }
-// Chạy khởi tạo ban đầu
+// Chạy lần đầu tiên để dựng giao diện nền
 resizeCanvas();
-initTargets();
 update();
