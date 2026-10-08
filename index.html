@@ -29,6 +29,7 @@
             background: #70c5ce;
             display: block;
         }
+        /* Giao diện UI Điểm */
         #ui {
             position: absolute;
             top: 20px;
@@ -40,6 +41,7 @@
             z-index: 5;
             text-shadow: 1px 1px 3px black;
         }
+        /* CSS cho các màn hình Menu Overlay */
         .overlay {
             position: absolute;
             top: 0;
@@ -91,14 +93,17 @@
 <body>
 
     <div id="gameContainer">
+        <!-- Điểm số -->
         <div id="ui" class="hidden">Điểm: <span id="score">0</span></div>
 
+        <!-- MÀN HÌNH MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Kéo và thả chú chim màu đỏ để phá hủy các khối hộp!</p>
             <button class="btn" onclick="startGame()">CHƠI NGAY</button>
         </div>
 
+        <!-- MÀN HÌNH KẾT THÚC / CHIẾN THẮNG -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p>Tổng số điểm của bạn: <span id="finalScore">0</span></p>
@@ -114,17 +119,21 @@ const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const ui = document.getElementById("ui");
 
+// Các phần tử Menu
 const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalScoreEl = document.getElementById("finalScore");
 
+// Quản lý trạng thái Game (MENU, PLAYING, GAMEOVER)
 let gameState = "MENU"; 
 let score = 0;
 const groundY = 350;
 
+// Khởi tạo Súng cao su
 const sling = { x: 150, y: 280, radius: 15 };
 
+// Khởi tạo Chim
 let bird = {
     x: sling.x,
     y: sling.y,
@@ -135,6 +144,7 @@ let bird = {
     isLaunched: false
 };
 
+// Khởi tạo Mục tiêu / Khối hộp
 let targets = [];
 
 function initTargets() {
@@ -145,6 +155,7 @@ function initTargets() {
     ];
 }
 
+// HÀM ĐIỀU KHIỂN MENU
 function startGame() {
     gameState = "PLAYING";
     score = 0;
@@ -152,6 +163,7 @@ function startGame() {
     initTargets();
     resetBird();
     
+    // Ẩn menu, hiện UI chơi game
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
     ui.classList.remove("hidden");
@@ -176,6 +188,7 @@ function restartGame() {
     startGame();
 }
 
+// Xử lý kéo thả chuột/cảm ứng (Chỉ chạy khi đang ở trạng thái PLAYING)
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -239,9 +252,11 @@ function checkCollision(b, t) {
     return distance < b.radius;
 }
 
+// VÒNG LẶP HÀM UPDATE
 function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Vẽ cảnh nền (Luôn vẽ dù ở trạng thái nào)
     ctx.fillStyle = "#654321";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
@@ -252,7 +267,9 @@ function update() {
     ctx.lineTo(sling.x, groundY);
     ctx.stroke();
 
+    // Logic xử lý khi ĐANG CHƠI
     if (gameState === "PLAYING") {
+        // Vẽ dây cao su khi kéo chim
         if (bird.isDragging) {
             ctx.strokeStyle = "#4a2c11";
             ctx.lineWidth = 6;
@@ -262,6 +279,7 @@ function update() {
             ctx.stroke();
         }
 
+        // Vật lý của chim
         if (bird.isLaunched) {
             bird.x += bird.vx;
             bird.y += bird.vy;
@@ -272,11 +290,13 @@ function update() {
             }
         }
 
+        // Vẽ Chim
         ctx.fillStyle = "#ff3333";
         ctx.beginPath();
         ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
         ctx.fill();
 
+        // Kiểm tra mục tiêu và va chạm
         let allDead = true;
         targets.forEach(t => {
             if (t.alive) {
@@ -293,10 +313,12 @@ function update() {
             }
         });
 
+        // Nếu bắn hạ hết khối hộp -> Kích hoạt màn hình chiến thắng
         if (allDead && targets.length > 0) {
             endGame(true);
         }
     } else {
+        // Nếu ở ngoài Menu, chỉ vẽ chú chim nằm yên trên súng cao su cho đẹp
         ctx.fillStyle = "#ff3333";
         ctx.beginPath();
         ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
@@ -306,6 +328,7 @@ function update() {
     requestAnimationFrame(update);
 }
 
+// Khởi chạy vòng lặp game ban đầu
 initTargets();
 update();
 </script>
