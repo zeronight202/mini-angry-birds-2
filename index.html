@@ -36,6 +36,7 @@ let gameState = "MENU";
 let score = 0;
 let scale = 1;
 let groundY = 0;
+let birdsLeft = 3; 
 
 let sling = { x: 0, y: 0, radius: 15 };
 let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
@@ -68,6 +69,20 @@ function resize() {
     const startX = canvas.width - (350 * scale);
     const boxW = 55 * scale;
     const boxH = 65 * scale;
+    
+    if (gameState === "MENU") {
+        targets = [
+            { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
+            { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
+            { x: startX + (boxW / 2) + (7 * scale), y: groundY - (boxH * 2) - (5 * scale), width: boxW, height: boxH, alive: true }
+        ];
+    }
+}
+
+function initTargets() {
+    const startX = canvas.width - (350 * scale);
+    const boxW = 55 * scale;
+    const boxH = 65 * scale;
     targets = [
         { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
         { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
@@ -79,26 +94,28 @@ function getMousePos(e) {
     let clientX = e.clientX;
     let clientY = e.clientY;
     if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
+        clientX = e.touches.clientX;
+        clientY = e.touches.clientY;
     } else if (e.changedTouches && e.changedTouches.length > 0) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
+        clientX = e.changedTouches.clientX;
+        clientY = e.changedTouches.clientY;
     }
     return { x: clientX, y: clientY };
 }
 
 function handleStart(e) {
     let pos = getMousePos(e);
-    if (gameState === "MENU" || gameState === "GAMEOVER") {
+    if (gameState === "MENU" || gameState === "WIN" || gameState === "LOSE") {
         if (pos.x >= buttonRect.x && pos.x <= buttonRect.x + buttonRect.w &&
             pos.y >= buttonRect.y && pos.y <= buttonRect.y + buttonRect.h) {
             score = 0;
+            birdsLeft = 3;
             gameState = "PLAYING";
             bird.isLaunched = false;
+            initTargets();
             resize();
         }
-    } else if (gameState === "PLAYING" && !bird.isLaunched) {
+    } else if (gameState === "PLAYING" && !bird.isLaunched && birdsLeft > 0) {
         let dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
         if (dist < bird.radius + (35 * scale)) {
             bird.isDragging = true;
@@ -123,6 +140,7 @@ function handleEnd() {
     bird.isLaunched = true;
     bird.vx = (sling.x - bird.x) * 0.15;
     bird.vy = (sling.y - bird.y) * 0.15;
+    birdsLeft--;
 }
 
 window.addEventListener("mousedown", handleStart);
@@ -159,7 +177,7 @@ function update() {
 
         ctx.fillStyle = "#ccc";
         ctx.font = Math.floor(20 * scale) + "px Arial";
-        ctx.fillText("Kéo và thả chú chim màu đỏ để phá hủy các khối hộp!", canvas.width / 2, canvas.height / 2);
+        ctx.fillText("Bạn có 3 lượt bắn để phá hủy các khối hộp!", canvas.width / 2, canvas.height / 2);
 
         ctx.fillStyle = "#8ddb44";
         ctx.beginPath();
@@ -169,7 +187,7 @@ function update() {
         ctx.fillStyle = "#222";
         ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
         ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
-    } else if (gameState === "GAMEOVER") {
+    } else if (gameState === "WIN") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -190,11 +208,35 @@ function update() {
         ctx.fillStyle = "#222";
         ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
         ctx.fillText("CHƠI LẠI", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
+    } else if (gameState === "LOSE") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ff3333";
+        ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 3);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = Math.floor(24 * scale) + "px Arial";
+        ctx.fillText("Hết chim! Điểm ghi được: " + score, canvas.width / 2, canvas.height / 2);
+
+        ctx.fillStyle = "#8ddb44";
+        ctx.beginPath();
+        ctx.roundRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h, 25 * scale);
+        ctx.fill();
+
+        ctx.fillStyle = "#222";
+        ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
+        ctx.fillText("THỬ LẠI", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
     } else if (gameState === "PLAYING") {
         ctx.fillStyle = "#fff";
-        ctx.font = "bold 28px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText("Điểm: " + score, 30, 40);
+        
+        ctx.textAlign = "right";
+        ctx.fillText("Số chim còn lại: " + (birdsLeft + (!bird.isLaunched ? 1 : 0)), canvas.width - 30, 40);
 
         if (bird.isDragging) {
             ctx.strokeStyle = "#4a2c11";
@@ -211,18 +253,28 @@ function update() {
             bird.vy += 0.25;
 
             if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
-                bird.x = sling.x;
-                bird.y = sling.y;
-                bird.vx = 0;
-                bird.vy = 0;
-                bird.isLaunched = false;
+                if (birdsLeft > 0) {
+                    bird.x = sling.x;
+                    bird.y = sling.y;
+                    bird.vx = 0;
+                    bird.vy = 0;
+                    bird.isLaunched = false;
+                } else {
+                    let boxesRemaining = false;
+                    targets.forEach(t => { if (t.alive) boxesRemaining = true; });
+                    if (boxesRemaining) {
+                        gameState = "LOSE";
+                    }
+                }
             }
         }
 
-        ctx.fillStyle = "#ff3333";
-        ctx.beginPath();
-        ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (!bird.isLaunched || (bird.isLaunched && bird.y + bird.radius < groundY)) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         let allDead = true;
         targets.forEach(t => {
@@ -233,30 +285,3 @@ function update() {
                 let closestY = Math.max(t.y, Math.min(bird.y, t.y + t.height));
                 let distance = Math.hypot(bird.x - closestX, bird.y - closestY);
                 
-                if (distance < bird.radius) {
-                    t.alive = false;
-                    score += 100;
-                }
-                
-                ctx.fillStyle = "#8ddb44";
-                ctx.fillRect(t.x, t.y, t.width, t.height);
-                ctx.strokeStyle = "#558822";
-                ctx.lineWidth = 2 * scale;
-                ctx.strokeRect(t.x, t.y, t.width, t.height);
-            }
-        });
-
-        if (allDead) {
-            gameState = "GAMEOVER";
-            resize();
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-resize();
-update();
-</script>
-</body>
-</html>
