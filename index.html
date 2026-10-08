@@ -81,14 +81,12 @@
 <body>
 
     <div id="gameContainer">
-        <!-- MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
             <button class="btn" onclick="startGame()">CHƠI NGAY</button>
         </div>
 
-        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
@@ -178,8 +176,8 @@ function getMousePos(e) {
     let clientY = e.clientY;
     
     if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
+        clientX = e.touches.clientX;
+        clientY = e.touches.clientY;
     }
     
     return {
@@ -204,7 +202,9 @@ function drag(e) {
     const distX = pos.x - sling.x;
     const distY = pos.y - sling.y;
     const angle = Math.atan2(distY, distX);
-    const dist = Math.min(Math.hypot(distX, distY), 100);
+    
+    let maxDrag = 150;
+    const dist = Math.min(Math.hypot(distX, distY), maxDrag);
 
     bird.x = sling.x + Math.cos(angle) * dist;
     bird.y = sling.y + Math.sin(angle) * dist;
@@ -215,10 +215,8 @@ function endDrag() {
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    bird.vx = (sling.x - bird.x) * 0.15;
-    bird.vy = (sling.y - bird.y) * 0.15;
-    
-    lives--;
+    bird.vx = (sling.x - bird.x) * 0.35;
+    bird.vy = (sling.y - bird.y) * 0.35;
 }
 
 canvas.addEventListener("mousedown", startDrag);
@@ -271,7 +269,7 @@ function update() {
         ctx.textAlign = "center";
         ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
 
-        for (let i = 0; i < lives; i++) {
+        for (let i = 0; i < lives - 1; i++) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
             ctx.arc(sling.x - 40 - (i * 35), groundY - bird.radius, bird.radius, 0, Math.PI * 2);
@@ -293,6 +291,8 @@ function update() {
             bird.vy += 0.2;
 
             if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
+                lives--;
+                
                 let currentAllDead = true;
                 targets.forEach(t => { if (t.alive) currentAllDead = false; });
                 
@@ -304,7 +304,7 @@ function update() {
             }
         }
 
-        if (!bird.isLaunched && lives >= 0) {
+        if (!bird.isLaunched && lives > 0) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
             ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
