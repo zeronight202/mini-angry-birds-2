@@ -284,4 +284,23 @@ function update() {
                 let closestX = Math.max(t.x, Math.min(bird.x, t.x + t.width));
                 let closestY = Math.max(t.y, Math.min(bird.y, t.y + t.height));
                 let distance = Math.hypot(bird.x - closestX, bird.y - closestY);
-                
+                if (distance < bird.radius && bird.isLaunched) {
+t.alive = false;
+score += 100;
+}
+ctx.fillStyle = "#8ddb44";
+ctx.fillRect(t.x, t.y, t.width, t.height);
+ctx.strokeStyle = "#558822";
+ctx.lineWidth = 2 * scale;
+ctx.strokeRect(t.x, t.y, t.width, t.height);
+}
+});
+if (allDead) {
+gameState = "WIN";
+}
+}
+requestAnimationFrame(update);
+}
+resize();
+initTargets();
+update();
