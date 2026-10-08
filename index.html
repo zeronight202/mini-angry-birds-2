@@ -176,8 +176,8 @@ function getMousePos(e) {
     let clientY = e.clientY;
     
     if (e.touches && e.touches.length > 0) {
-        clientX = e.touches.clientX;
-        clientY = e.touches.clientY;
+        clientX = e.touches[clientX].clientX;
+        clientY = e.touches[clientY].clientY;
     }
     
     return {
