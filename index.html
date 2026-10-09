@@ -10,100 +10,27 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #222;
+            background: #111;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: Arial, sans-serif;
-        }
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
         }
         canvas {
             background: #70c5ce;
             display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        .overlay h1 {
-            font-size: 48px;
-            margin: 0 0 20px 0;
-            color: #ff3333;
-            text-shadow: 2px 2px 5px black;
-        }
-        .overlay p {
-            font-size: 20px;
-            margin: 0 0 30px 0;
-        }
-        .btn {
-            padding: 15px 40px;
-            font-size: 22px;
-            font-weight: bold;
-            background: #8ddb44;
-            color: #222;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            box-shadow: 0 5px 0 #558822;
-            transition: 0.1s;
-        }
-        .btn:hover {
-            background: #a2e85c;
-        }
-        .btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #558822;
-        }
-        .hidden {
-            display: none !important;
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
 
-    <div id="gameContainer">
-        <div id="startScreen" class="overlay">
-            <h1>ANGRY BIRDS MINI</h1>
-            <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI NGAY</button>
-        </div>
-
-        <div id="gameOverScreen" class="overlay hidden">
-            <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
-            <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI LẠI</button>
-        </div>
-
-        <canvas id="gameCanvas"></canvas>
-    </div>
+    <canvas id="gameCanvas"></canvas>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-
-const startScreen = document.getElementById("startScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
-const gameOverTitle = document.getElementById("gameOverTitle");
-const finalText = document.getElementById("finalText");
 
 let gameState = "MENU"; 
 let score = 0;
@@ -114,6 +41,7 @@ let scale = 1;
 let sling = { x: 0, y: 0, radius: 15 };
 let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
 let targets = [];
+let buttonRect = { x: 0, y: 0, w: 220, h: 55 };
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -135,6 +63,11 @@ function resizeCanvas() {
         bird.radius = 18 * scale;
     }
 
+    buttonRect.w = 220 * scale;
+    buttonRect.h = 55 * scale;
+    buttonRect.x = (canvas.width - buttonRect.w) / 2;
+    buttonRect.y = (canvas.height / 2) + (40 * scale);
+
     const startX = canvas.width - (350 * scale);
     const boxW = 55 * scale;
     const boxH = 65 * scale;
@@ -144,37 +77,6 @@ function resizeCanvas() {
         { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
         { x: startX + (boxW / 2) + (7 * scale), y: groundY - (boxH * 2) - (5 * scale), width: boxW, height: boxH, alive: true }
     ];
-}
-
-function triggerStart(e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    gameState = "PLAYING";
-    score = 0;
-    lives = 3;
-    
-    resizeCanvas();
-    resetBird();
-    
-    startScreen.classList.add("hidden");
-    gameOverScreen.classList.add("hidden");
-}
-
-function endGame(isWin) {
-    gameState = "GAMEOVER";
-    gameOverScreen.classList.remove("hidden");
-    
-    if (isWin) {
-        gameOverTitle.textContent = "CHIẾN THẮNG!";
-        gameOverTitle.style.color = "#8ddb44";
-        finalText.innerHTML = "Tổng số điểm của bạn: " + score;
-    } else {
-        gameOverTitle.textContent = "GAME OVER";
-        gameOverTitle.style.color = "#ff3333";
-        finalText.innerHTML = "Bạn đã hết mạng! Điểm số: " + score;
-    }
 }
 
 function getMousePos(e) {
@@ -199,17 +101,30 @@ function getMousePos(e) {
     };
 }
 
-function startDrag(e) {
-    if (gameState !== "PLAYING" || bird.isLaunched || lives <= 0) return;
+function handleInteractionStart(e) {
     const pos = getMousePos(e);
-    const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-    if (dist < bird.radius + (30 * scale)) {
-        bird.isDragging = true;
+    
+    if (gameState === "MENU" || gameState === "GAMEOVER") {
+        if (pos.x >= buttonRect.x && pos.x <= buttonRect.x + buttonRect.w &&
+            pos.y >= buttonRect.y && pos.y <= buttonRect.y + buttonRect.h) {
+            gameState = "PLAYING";
+            score = 0;
+            lives = 3;
+            resizeCanvas();
+            resetBird();
+        }
+    } else if (gameState === "PLAYING") {
+        if (!bird.isLaunched && lives > 0) {
+            const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
+            if (dist < bird.radius + (35 * scale)) {
+                bird.isDragging = true;
+            }
+        }
     }
 }
 
-function drag(e) {
-    if (!bird.isDragging || gameState !== "PLAYING") return;
+function handleInteractionMove(e) {
+    if (gameState !== "PLAYING" || !bird.isDragging) return;
     const pos = getMousePos(e);
     
     const distX = pos.x - sling.x;
@@ -223,8 +138,8 @@ function drag(e) {
     bird.y = sling.y + Math.sin(angle) * dist;
 }
 
-function endDrag() {
-    if (!bird.isDragging || gameState !== "PLAYING") return;
+function handleInteractionEnd() {
+    if (gameState !== "PLAYING" || !bird.isDragging) return;
     bird.isDragging = false;
     bird.isLaunched = true;
 
@@ -232,17 +147,15 @@ function endDrag() {
     bird.vy = (sling.y - bird.y) * 0.24;
 }
 
-canvas.addEventListener("mousedown", startDrag);
-canvas.addEventListener("mousemove", drag);
-window.addEventListener("mouseup", endDrag);
+canvas.addEventListener("mousedown", handleInteractionStart);
+canvas.addEventListener("mousemove", handleInteractionMove);
+window.addEventListener("mouseup", handleInteractionEnd);
 
-canvas.addEventListener("touchstart", function(e) { startDrag(e); }, { passive: true });
-canvas.addEventListener("touchmove", function(e) { drag(e); }, { passive: true });
-window.addEventListener("touchend", endDrag);
+canvas.addEventListener("touchstart", function(e) { handleInteractionStart(e); }, { passive: true });
+canvas.addEventListener("touchmove", function(e) { handleInteractionMove(e); }, { passive: true });
+window.addEventListener("touchend", handleInteractionEnd);
 
-window.addEventListener("resize", () => {
-    resizeCanvas();
-});
+window.addEventListener("resize", resizeCanvas);
 
 function resetBird() {
     bird.x = sling.x;
@@ -273,7 +186,48 @@ function update() {
     ctx.lineTo(sling.x, groundY);
     ctx.stroke();
 
-    if (gameState === "PLAYING") {
+    if (gameState === "MENU") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ff3333";
+        ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("ANGRY BIRDS MINI", canvas.width / 2, canvas.height / 3);
+
+        ctx.fillStyle = "#ccc";
+        ctx.font = Math.floor(20 * scale) + "px Arial";
+        ctx.fillText("Kéo ngược và thả chú chim để bắn hạ khối hộp!", canvas.width / 2, canvas.height / 2);
+
+        ctx.fillStyle = "#8ddb44";
+        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
+
+        ctx.fillStyle = "#222";
+        ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
+        ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
+    } else if (gameState === "GAMEOVER") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let allDead = true;
+        targets.forEach(t => { if (t.alive) allDead = false; });
+
+        ctx.fillStyle = allDead ? "#8ddb44" : "#ff3333";
+        ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(allDead ? "CHIẾN THẮNG!" : "GAME OVER", canvas.width / 2, canvas.height / 3);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = Math.floor(24 * scale) + "px Arial";
+        ctx.fillText(allDead ? "Tổng số điểm của bạn: " + score : "Hết lượt bắn! Điểm số: " + score, canvas.width / 2, canvas.height / 2);
+
+        ctx.fillStyle = "#8ddb44";
+        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
+
+        ctx.fillStyle = "#222";
+        ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
+        ctx.fillText(allDead ? "CHƠI LẠI" : "THỬ LẠI", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
+    } else if (gameState === "PLAYING") {
         ctx.fillStyle = "#fff";
         ctx.font = "bold 24px Arial";
         ctx.textAlign = "center";
@@ -324,33 +278,29 @@ function update() {
                 targets.forEach(t => { if (t.alive) currentAllDead = false; });
                 
                 if (!currentAllDead && lives === 0) {
-                    endGame(false);
+                    gameState = "GAMEOVER";
                 } else if (!currentAllDead) {
                     resetBird();
                 }
             }
         }
 
-        if (!bird.isLaunched && lives > 0) {
+        if (lives > 0 && (!bird.isLaunched || (bird.isLaunched && bird.y + bird.radius < groundY))) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
             ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
             ctx.fill();
-} else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-ctx.fillStyle = "#ff3333";
-ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
-}
-let allDead = true;
-targets.forEach(t => {
-if (t.alive) {
-allDead = false;
-if (checkCollision(bird, t)) {
-t.alive = false;
-score += 100;
-}
-ctx.fillStyle = "#8ddb44";
+        }
+
+        let allDead = true;
+        targets.forEach(t => {
+            if (t.alive) {
+                allDead = false;
+                if (checkCollision(bird, t)) {
+                    t.alive = false;
+                    score += 100;
+                }
+                ctx.fillStyle = "#8ddb44";
 ctx.fillRect(t.x, t.y, t.width, t.height);
 ctx.strokeStyle = "#558822";
 ctx.lineWidth = 2 * scale;
@@ -358,13 +308,8 @@ ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
 });
 if (allDead && targets.length > 0) {
-endGame(true);
+gameState = "GAMEOVER";
 }
-} else {
-ctx.fillStyle = "#ff3333";
-ctx.beginPath();
-ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
 }
 requestAnimationFrame(update);
 }
