@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Angry Birds Fix</title>
+    <title>Angry Birds Mini Clone</title>
     <style>
         body, html {
             margin: 0;
@@ -84,13 +84,13 @@
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI NGAY</button>
+            <button class="btn" id="startBtn">CHƠI NGAY</button>
         </div>
 
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -104,6 +104,9 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
+
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
 
 let gameState = "MENU"; 
 let score = 0;
@@ -146,11 +149,7 @@ function resizeCanvas() {
     ];
 }
 
-function triggerStart(e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+function triggerStart() {
     gameState = "PLAYING";
     score = 0;
     lives = 3;
@@ -161,6 +160,18 @@ function triggerStart(e) {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 }
+
+startBtn.addEventListener("click", triggerStart);
+startBtn.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    triggerStart();
+});
+
+restartBtn.addEventListener("click", triggerStart);
+restartBtn.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    triggerStart();
+});
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
@@ -179,15 +190,12 @@ function endGame(isWin) {
 
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
+    let clientX = e.clientX;
+    let clientY = e.clientY;
     
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
     }
     
     return {
@@ -331,12 +339,12 @@ function update() {
         if (!bird.isLaunched && lives > 0) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
+} else if (bird.isLaunched && bird.y + bird.radius < groundY) {
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
 ctx.fill();
 }
 let allDead = true;
