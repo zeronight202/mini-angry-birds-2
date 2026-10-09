@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds Fix</title>
+    <title>Angry Birds Fix 100%</title>
     <style>
         body, html {
             margin: 0;
@@ -141,11 +141,7 @@ function initTargets() {
     ];
 }
 
-function triggerStart(e) {
-    if(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
+function triggerStart() {
     gameState = "PLAYING";
     score = 0;
     lives = 3;
@@ -158,11 +154,17 @@ function triggerStart(e) {
     gameOverScreen.classList.add("hidden");
 }
 
-startBtn.addEventListener("click", triggerStart);
-startBtn.addEventListener("touchstart", triggerStart, { passive: false });
+function buttonHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    triggerStart();
+}
 
-restartBtn.addEventListener("click", triggerStart);
-restartBtn.addEventListener("touchstart", triggerStart, { passive: false });
+startBtn.addEventListener("click", buttonHandler);
+startBtn.addEventListener("touchstart", buttonHandler);
+
+restartBtn.addEventListener("click", buttonHandler);
+restartBtn.addEventListener("touchstart", buttonHandler);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
