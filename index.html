@@ -35,43 +35,39 @@ const ctx = canvas.getContext("2d");
 let gameState = "MENU"; 
 let score = 0;
 let lives = 3;
-let groundY = 0;
+let groundY = window.innerHeight * 0.85;
 
-let sling = { x: 0, y: 0, radius: 15 };
-let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
+let sling = { x: window.innerWidth * 0.18, y: (window.innerHeight * 0.85) - 70, radius: 15 };
+let bird = { x: window.innerWidth * 0.18, y: (window.innerHeight * 0.85) - 70, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
 let targets = [];
-let buttonRect = { x: 0, y: 0, w: 220, h: 55 };
+let buttonRect = { x: (window.innerWidth - 200) / 2, y: (window.innerHeight / 2) + 40, w: 200, h: 50 };
 
 function initLayout() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    groundY = canvas.height - 100;
-    if (groundY < 200) groundY = canvas.height * 0.8;
-
-    sling.x = canvas.width * 0.2;
-    if (sling.x < 160) sling.x = 160;
-    sling.y = groundY - 80;
+    groundY = canvas.height * 0.85;
+    sling.x = canvas.width * 0.18;
+    if (sling.x < 150) sling.x = 150;
+    sling.y = groundY - 70;
     
     if (!bird.isLaunched) {
         bird.x = sling.x;
         bird.y = sling.y;
-        bird.radius = 16;
+        bird.radius = 15;
     }
 
-    buttonRect.w = 220;
-    buttonRect.h = 55;
+    buttonRect.w = 200;
+    buttonRect.h = 50;
     buttonRect.x = (canvas.width - buttonRect.w) / 2;
-    buttonRect.y = (canvas.height / 2) + 20;
+    buttonRect.y = (canvas.height / 2) + 40;
 
-    if (targets.length === 0 || gameState === "MENU") {
-        const startX = canvas.width * 0.75;
-        targets = [
-            { x: startX, y: groundY - 50, width: 45, height: 50, alive: true },
-            { x: startX + 55, y: groundY - 50, width: 45, height: 50, alive: true },
-            { x: startX + 27, y: groundY - 100, width: 45, height: 50, alive: true }
-        ];
-    }
+    const startX = canvas.width * 0.75;
+    targets = [
+        { x: startX, y: groundY - 50, width: 40, height: 50, alive: true },
+        { x: startX + 50, y: groundY - 50, width: 40, height: 50, alive: true },
+        { x: startX + 25, y: groundY - 100, width: 40, height: 50, alive: true }
+    ];
 }
 
 function getMousePos(e) {
@@ -93,7 +89,7 @@ function getMousePos(e) {
     };
 }
 
-function handleStart(e) {
+function handleInteractionStart(e) {
     const pos = getMousePos(e);
     
     if (gameState === "MENU" || gameState === "GAMEOVER") {
@@ -108,14 +104,14 @@ function handleStart(e) {
     } else if (gameState === "PLAYING") {
         if (!bird.isLaunched && lives > 0) {
             const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-            if (dist < bird.radius + 35) {
+            if (dist < bird.radius + 30) {
                 bird.isDragging = true;
             }
         }
     }
 }
 
-function handleMove(e) {
+function handleInteractionMove(e) {
     if (gameState !== "PLAYING" || !bird.isDragging) return;
     const pos = getMousePos(e);
     
@@ -123,28 +119,29 @@ function handleMove(e) {
     const distY = pos.y - sling.y;
     const angle = Math.atan2(distY, distX);
     
-    const dist = Math.min(Math.hypot(distX, distY), 130);
+    let maxDrag = 150;
+    const dist = Math.min(Math.hypot(distX, distY), maxDrag);
 
     bird.x = sling.x + Math.cos(angle) * dist;
     bird.y = sling.y + Math.sin(angle) * dist;
 }
 
-function handleEnd() {
+function handleInteractionEnd() {
     if (gameState !== "PLAYING" || !bird.isDragging) return;
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    bird.vx = (sling.x - bird.x) * 0.23;
-    bird.vy = (sling.y - bird.y) * 0.23;
+    bird.vx = (sling.x - bird.x) * 0.22;
+    bird.vy = (sling.y - bird.y) * 0.22;
 }
 
-canvas.addEventListener("mousedown", handleStart);
-canvas.addEventListener("mousemove", handleMove);
-window.addEventListener("mouseup", handleEnd);
+canvas.addEventListener("mousedown", handleInteractionStart);
+canvas.addEventListener("mousemove", handleInteractionMove);
+window.addEventListener("mouseup", handleInteractionEnd);
 
-canvas.addEventListener("touchstart", function(e) { handleStart(e); }, { passive: true });
-canvas.addEventListener("touchmove", function(e) { handleMove(e); }, { passive: true });
-window.addEventListener("touchend", handleEnd);
+canvas.addEventListener("touchstart", function(e) { handleInteractionStart(e); }, { passive: true });
+canvas.addEventListener("touchmove", function(e) { handleInteractionMove(e); }, { passive: true });
+window.addEventListener("touchend", handleInteractionEnd);
 
 window.addEventListener("resize", initLayout);
 
@@ -167,11 +164,9 @@ function checkCollision(b, t) {
 function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Bầu trời và Mặt đất luôn vẽ để tránh xanh viền
     ctx.fillStyle = "#654321";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-    // Trụ súng cao su
     ctx.strokeStyle = "#4a2c11";
     ctx.lineWidth = 6;
     ctx.beginPath();
@@ -179,116 +174,87 @@ function update() {
     ctx.lineTo(sling.x, groundY);
     ctx.stroke();
 
-    // Khối hộp mục tiêu luôn xuất hiện làm nền trang trí
-    let allDead = true;
-    targets.forEach(t => {
-        if (t.alive) {
-            allDead = false;
-            ctx.fillStyle = "#8ddb44";
-            ctx.fillRect(t.x, t.y, t.width, t.height);
-            ctx.strokeStyle = "#558822";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(t.x, t.y, t.width, t.height);
-        }
-    });
-
-    // Chim dự phòng ở bệ bắn sau
-    if (gameState === "PLAYING") {
-        for (let i = 0; i < lives - 1; i++) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(sling.x - 45 - (i * 35), groundY - bird.radius, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
     if (gameState === "MENU") {
-        // Lớp phủ tối mờ
-        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = "#ff3333";
-        ctx.font = "bold 44px Arial";
+        ctx.font = "bold 48px Arial";
         ctx.textAlign = "center";
         ctx.fillText("ANGRY BIRDS MINI", canvas.width / 2, canvas.height / 3);
 
         ctx.fillStyle = "#fff";
         ctx.font = "20px Arial";
-        ctx.fillText("Bắn hạ toàn bộ khối hộp với 3 chú chim thay phiên!", canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText("Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!", canvas.width / 2, canvas.height / 2);
 
-        // Vẽ nút chơi ngay
         ctx.fillStyle = "#8ddb44";
-        ctx.beginPath();
-        ctx.rect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
-        ctx.fill();
+        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
 
         ctx.fillStyle = "#222";
-        ctx.font = "bold 20px Arial";
-        ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + 35);
-
-        // Chim đậu trên súng ở menu chính
-        ctx.fillStyle = "#ff3333";
-        ctx.beginPath();
-        ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
-        ctx.fill();
-
+        ctx.font = "bold 22px Arial";
+        ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + 33);
     } else if (gameState === "GAMEOVER") {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = allDead ? "#8ddb44" : "#ff3333";
-        ctx.font = "bold 46px Arial";
+        let currentAllDead = true;
+        targets.forEach(t => { if (t.alive) currentAllDead = false; });
+
+        ctx.fillStyle = currentAllDead ? "#8ddb44" : "#ff3333";
+        ctx.font = "bold 48px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(allDead ? "CHIẾN THẮNG!" : "GAME OVER", canvas.width / 2, canvas.height / 3);
+        ctx.fillText(currentAllDead ? "CHIẾN THẮNG!" : "GAME OVER", canvas.width / 2, canvas.height / 3);
 
         ctx.fillStyle = "#fff";
-        ctx.font = "22px Arial";
-        ctx.fillText(allDead ? "Tổng số điểm của bạn: " + score : "Bạn đã hết mạng! Điểm số: " + score, canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = "24px Arial";
+        ctx.fillText(currentAllDead ? "Tổng số điểm của bạn: " + score : "Bạn đã hết mạng! Điểm số: " + score, canvas.width / 2, canvas.height / 2);
 
         ctx.fillStyle = "#8ddb44";
-        ctx.beginPath();
-        ctx.rect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
-        ctx.fill();
+        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
 
         ctx.fillStyle = "#222";
-        ctx.font = "bold 20px Arial";
-        ctx.fillText(allDead ? "CHƠI LẠI" : "THỬ LẠI", canvas.width / 2, buttonRect.y + 35);
-
+        ctx.font = "bold 22px Arial";
+        ctx.fillText(currentAllDead ? "CHƠI LẠI" : "THỬ LẠI", canvas.width / 2, buttonRect.y + 33);
     } else if (gameState === "PLAYING") {
-        // Hiển thị điểm số khi chơi
         ctx.fillStyle = "#fff";
         ctx.font = "bold 24px Arial";
         ctx.textAlign = "center";
         ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
 
-        // Vẽ dây chun súng cao su khi kéo bắn
+        for (let i = 0; i < lives - 1; i++) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(sling.x - 40 - (i * 35), groundY - bird.radius, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         if (bird.isDragging) {
             ctx.strokeStyle = "#4a2c11";
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 6;
             ctx.beginPath();
             ctx.moveTo(sling.x, sling.y);
             ctx.lineTo(bird.x, bird.y);
             ctx.stroke();
 
-            // Vẽ đường vệt định hướng chấm tròn
             let simX = bird.x;
             let simY = bird.y;
-            let simVx = (sling.x - bird.x) * 0.23;
-            let simVy = (sling.y - bird.y) * 0.23;
+            let simVx = (sling.x - bird.x) * 0.22;
+            let simVy = (sling.y - bird.y) * 0.22;
             
             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
             for (let i = 0; i < 30; i += 2) {
                 simX += simVx * 2;
                 simY += simVy * 2;
                 simVy += 0.2 * 2;
+                
                 if (simY >= groundY || simX > canvas.width || simX < 0) break;
+                
                 ctx.beginPath();
                 ctx.arc(simX, simY, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
 
-        // Logic xử lý bay và va chạm của chim
         if (bird.isLaunched) {
             bird.x += bird.vx;
             bird.y += bird.vy;
@@ -298,37 +264,50 @@ function update() {
                 bird.isLaunched = false;
                 lives--;
                 
-                if (allDead) {
+                let currentAllDead = true;
+                targets.forEach(t => { if (t.alive) currentAllDead = false; });
+                
+                if (!currentAllDead && lives === 0) {
                     gameState = "GAMEOVER";
-                } else if (lives === 0) {
-                    gameState = "GAMEOVER";
-                } else {
+                } else if (!currentAllDead) {
                     resetBird();
                 }
             }
         }
 
-        // Vẽ chú chim đang hoạt động
-        if (lives > 0) {
+        if (!bird.isLaunched && lives > 0) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
             ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Kiểm tra va chạm thực tế với khối hộp
+        let allDead = true;
         targets.forEach(t => {
-            if (t.alive && bird.isLaunched && checkCollision(bird, t)) {
-t.alive = false;
-score += 100;
-}
-});
-if (allDead && targets.length > 0) {
-gameState = "GAMEOVER";
+            if (t.alive) {
+                allDead = false;
+                if (checkCollision(bird, t)) {
+                    t.alive = false;
+                    score += 100;
+                }
+                ctx.fillStyle = "#8ddb44";
+                ctx.fillRect(t.x, t.y, t.width, t.height);
+                ctx.strokeStyle = "#558822";
+                ctx.strokeRect(t.x, t.y, t.width, t.height);
+            }
+        });
+
+        if (allDead && targets.length > 0) {
+            gameState = "GAMEOVER";
 }
 }
 requestAnimationFrame(update);
 }
-// Khởi chạy hệ thống dựng hình
 initLayout();
 update();
+
