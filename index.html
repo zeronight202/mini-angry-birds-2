@@ -161,14 +161,12 @@ function triggerStart() {
     gameOverScreen.classList.add("hidden");
 }
 
-startBtn.addEventListener("click", triggerStart);
-startBtn.addEventListener("touchstart", function(e) {
+startBtn.addEventListener("pointerdown", function(e) {
     e.preventDefault();
     triggerStart();
 });
 
-restartBtn.addEventListener("click", triggerStart);
-restartBtn.addEventListener("touchstart", function(e) {
+restartBtn.addEventListener("pointerdown", function(e) {
     e.preventDefault();
     triggerStart();
 });
@@ -339,8 +337,8 @@ function update() {
         if (!bird.isLaunched && lives > 0) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
 } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
 ctx.fillStyle = "#ff3333";
 ctx.beginPath();
