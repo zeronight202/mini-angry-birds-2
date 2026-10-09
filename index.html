@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds Fix Triệt Để</title>
+    <title>Angry Birds Fix</title>
     <style>
         body, html {
             margin: 0;
@@ -15,7 +15,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
         }
         #gameContainer {
             position: relative;
@@ -28,6 +28,25 @@
             width: 100%;
             height: 100%;
         }
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .hud-text {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 3px black;
+        }
         .overlay {
             position: absolute;
             top: 0;
@@ -39,7 +58,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10;
+            z-index: 100;
             color: white;
             text-align: center;
             padding: 20px;
@@ -65,6 +84,7 @@
             cursor: pointer;
             box-shadow: 0 5px 0 #558822;
             transition: 0.1s;
+            pointer-events: auto;
         }
         .btn:hover {
             background: #a2e85c;
@@ -81,18 +101,20 @@
 <body>
 
     <div id="gameContainer">
-        <!-- MENU BẮT ĐẦU -->
+        <div id="uiOverlay" class="hidden">
+            <div class="hud-text">Điểm: <span id="scoreText">0</span></div>
+        </div>
+
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
-            <button class="btn" onclick="startGame()">CHƠI NGAY</button>
+            <button class="btn" id="startBtn">CHƠI NGAY</button>
         </div>
 
-        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" onclick="restartGame()">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -106,6 +128,11 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
+const uiOverlay = document.getElementById("uiOverlay");
+const scoreText = document.getElementById("scoreText");
+
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
 
 let gameState = "MENU"; 
 let score = 0;
@@ -140,10 +167,11 @@ function initTargets() {
     ];
 }
 
-function startGame() {
+function triggerStart() {
     gameState = "PLAYING";
     score = 0;
     lives = 3;
+    scoreText.textContent = score;
     
     resizeCanvas();
     initTargets();
@@ -151,11 +179,16 @@ function startGame() {
     
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
+    uiOverlay.classList.remove("hidden");
 }
+
+startBtn.addEventListener("click", triggerStart);
+restartBtn.addEventListener("click", triggerStart);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
     gameOverScreen.classList.remove("hidden");
+    uiOverlay.classList.add("hidden");
     
     if (isWin) {
         gameOverTitle.textContent = "CHIẾN THẮNG!";
@@ -168,21 +201,14 @@ function endGame(isWin) {
     }
 }
 
-function restartGame() {
-    startGame();
-}
-
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
+    let clientX = e.clientX;
+    let clientY = e.clientY;
     
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
     }
     
     return {
@@ -269,11 +295,6 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 24px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
-
         for (let i = 0; i < lives - 1; i++) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
@@ -325,29 +346,28 @@ function update() {
                 } else if (!currentAllDead) {
                     resetBird();
                 }
-            }
-        }
-
-        if (!bird.isLaunched && lives > 0) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        let allDead = true;
-        targets.forEach(t => {
-            if (t.alive) {
-                allDead = false;
-                if (checkCollision(bird, t)) {
-                    t.alive = false;
-                    score += 100;
-                }
+}
+}
+if (!bird.isLaunched && lives > 0) {
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
+} else if (bird.isLaunched && bird.y + bird.radius < groundY) {
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
+}
+let allDead = true;
+targets.forEach(t => {
+if (t.alive) {
+allDead = false;
+if (checkCollision(bird, t)) {
+t.alive = false;
+score += 100;
+scoreText.textContent = score;
+}
 ctx.fillStyle = "#8ddb44";
 ctx.fillRect(t.x, t.y, t.width, t.height);
 ctx.strokeStyle = "#558822";
