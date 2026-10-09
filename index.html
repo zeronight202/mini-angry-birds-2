@@ -23,6 +23,7 @@
             height: 100vh;
         }
         canvas {
+            background: #70c5ce;
             display: block;
             width: 100%;
             height: 100%;
@@ -83,13 +84,13 @@
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
-            <button class="btn" id="startBtn">CHƠI NGAY</button>
+            <button class="btn" id="startBtn" onclick="triggerStart()">CHƠI NGAY</button>
         </div>
 
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" id="restartBtn">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn" onclick="triggerStart()">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -103,9 +104,6 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
-
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
 
 let gameState = "MENU"; 
 let score = 0;
@@ -157,11 +155,13 @@ function resizeCanvas() {
         { x: canvas.width * 0.90, y: groundY, r: 50 * scale }
     ];
 
-    clouds = [
-        { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
-        { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
-        { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
-    ];
+    if (clouds.length === 0) {
+        clouds = [
+            { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
+            { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
+            { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
+        ];
+    }
 }
 
 function triggerStart() {
@@ -174,9 +174,6 @@ function triggerStart() {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 }
-
-startBtn.addEventListener("click", triggerStart);
-restartBtn.addEventListener("click", triggerStart);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
@@ -336,8 +333,8 @@ function drawPig(x, y, r) {
 function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-gradient.addColorStop(0, "#1a80b8");
+    let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#1a80b8");
 gradient.addColorStop(0.6, "#70c5ce");
 gradient.addColorStop(1, "#9be2e6");
 ctx.fillStyle = gradient;
