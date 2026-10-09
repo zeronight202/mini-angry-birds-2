@@ -76,6 +76,7 @@
             cursor: pointer;
             box-shadow: 0 5px 0 #558822;
             transition: all 0.1s ease;
+            pointer-events: auto !important;
         }
         .btn:hover {
             background: #a2e85c;
@@ -95,13 +96,13 @@
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Kéo ngược và thả chú chim màu đỏ để bắn hạ toàn bộ khối hộp! Bạn có tổng cộng 3 chú chim thay phiên nhau.</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI NGAY</button>
+            <button class="btn" id="startBtn">CHƠI NGAY</button>
         </div>
 
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" onclick="triggerStart(event)">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -115,6 +116,9 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
+
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
 
 const VIRTUAL_WIDTH = 1000;
 const VIRTUAL_HEIGHT = 500;
@@ -164,6 +168,13 @@ function triggerStart(e) {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 }
+
+// Gán sự kiện click và touch bằng phương thức addEventListener trực tiếp trong script để sửa lỗi chặn tương tác cảm ứng
+startBtn.addEventListener("click", triggerStart);
+startBtn.addEventListener("touchstart", triggerStart);
+
+restartBtn.addEventListener("click", triggerStart);
+restartBtn.addEventListener("touchstart", triggerStart);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
@@ -238,8 +249,8 @@ canvas.addEventListener("mousedown", startDrag);
 canvas.addEventListener("mousemove", drag);
 window.addEventListener("mouseup", endDrag);
 
-canvas.addEventListener("touchstart", function(e) { startDrag(e); }, { passive: true });
-canvas.addEventListener("touchmove", function(e) { drag(e); }, { passive: true });
+canvas.addEventListener("touchstart", startDrag, { passive: true });
+canvas.addEventListener("touchmove", drag, { passive: true });
 window.addEventListener("touchend", endDrag);
 
 window.addEventListener("resize", fitCanvasToWindow);
@@ -319,21 +330,18 @@ function update() {
                 if (i % 2 === 0) {
                     ctx.beginPath();
                     ctx.arc(simX, simY, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-
-        if (bird.isLaunched) {
-            bird.x += bird.vx;
-            bird.y += bird.vy;
-            bird.vy += 0.22; 
-
-            if (bird.y + bird.radius >= groundY || bird.x > VIRTUAL_WIDTH || bird.x < 0) {
-                bird.isLaunched = false;
-                lives--;
-                
-                let currentAllDead = true;
+ctx.fill();
+}
+}
+}
+if (bird.isLaunched) {
+bird.x += bird.vx;
+bird.y += bird.vy;
+bird.vy += 0.22;
+if (bird.y + bird.radius >= groundY || bird.x > VIRTUAL_WIDTH || bird.x < 0) {
+bird.isLaunched = false;
+lives--;
+let currentAllDead = true;
 targets.forEach(t => { if (t.alive) currentAllDead = false; });
 if (!currentAllDead && lives === 0) {
 endGame(false);
