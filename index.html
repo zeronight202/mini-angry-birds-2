@@ -176,8 +176,8 @@ function getMousePos(e) {
     let clientY = e.clientY;
     
     if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[clientX].clientX;
-        clientY = e.touches[clientY].clientY;
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
     }
     
     return {
@@ -215,8 +215,8 @@ function endDrag() {
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    bird.vx = (sling.x - bird.x) * 0.24;
-    bird.vy = (sling.y - bird.y) * 0.24;
+    bird.vx = (sling.x - bird.x) * 0.22;
+    bird.vy = (sling.y - bird.y) * 0.22;
 }
 
 canvas.addEventListener("mousedown", startDrag);
@@ -283,6 +283,24 @@ function update() {
             ctx.moveTo(sling.x, sling.y);
             ctx.lineTo(bird.x, bird.y);
             ctx.stroke();
+
+            let simX = bird.x;
+            let simY = bird.y;
+            let simVx = (sling.x - bird.x) * 0.22;
+            let simVy = (sling.y - bird.y) * 0.22;
+            
+            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+            for (let i = 0; i < 30; i += 2) {
+                simX += simVx * 2;
+                simY += simVy * 2;
+                simVy += 0.2 * 2;
+                
+                if (simY >= groundY || simX > canvas.width || simX < 0) break;
+                
+                ctx.beginPath();
+                ctx.arc(simX, simY, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
         if (bird.isLaunched) {
@@ -291,6 +309,7 @@ function update() {
             bird.vy += 0.2;
 
             if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
+                bird.isLaunched = false;
                 lives--;
                 
                 let currentAllDead = true;
@@ -327,25 +346,19 @@ function update() {
                 ctx.fillStyle = "#8ddb44";
                 ctx.fillRect(t.x, t.y, t.width, t.height);
                 ctx.strokeStyle = "#558822";
-                ctx.strokeRect(t.x, t.y, t.width, t.height);
-            }
-        });
-
-        if (allDead && targets.length > 0) {
-            endGame(true);
-        }
-    } else {
-        ctx.fillStyle = "#ff3333";
-        ctx.beginPath();
-        ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    requestAnimationFrame(update);
+ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
-
+});
+if (allDead && targets.length > 0) {
+endGame(true);
+}
+} else {
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
+}
+requestAnimationFrame(update);
+}
 resizeCanvas();
 update();
-</script>
-</body>
-</html>
