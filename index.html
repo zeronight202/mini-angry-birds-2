@@ -114,7 +114,7 @@ function getMousePos(e) {
     };
 }
 
-function startDrag(e) {
+function handleInteractionStart(e) {
     const pos = getMousePos(e);
     
     if (gameState === "MENU" || gameState === "GAMEOVER") {
@@ -131,7 +131,7 @@ function startDrag(e) {
     }
 }
 
-function drag(e) {
+function handleInteractionMove(e) {
     if (gameState !== "PLAYING" || !bird.isDragging) return;
     const pos = getMousePos(e);
     
@@ -146,7 +146,7 @@ function drag(e) {
     bird.y = sling.y + Math.sin(angle) * dist;
 }
 
-function endDrag() {
+function handleInteractionEnd() {
     if (gameState !== "PLAYING" || !bird.isDragging) return;
     bird.isDragging = false;
     bird.isLaunched = true;
@@ -155,17 +155,17 @@ function endDrag() {
     bird.vy = (sling.y - bird.y) * 0.24;
 }
 
-canvas.addEventListener("mousedown", startDrag);
-canvas.addEventListener("mousemove", drag);
-window.addEventListener("mouseup", endDrag);
+canvas.addEventListener("mousedown", handleInteractionStart);
+canvas.addEventListener("mousemove", handleInteractionMove);
+window.addEventListener("mouseup", handleInteractionEnd);
 
 canvas.addEventListener("touchstart", function(e) {
-    startDrag(e);
+    handleInteractionStart(e);
 }, { passive: true });
 canvas.addEventListener("touchmove", function(e) {
-    drag(e);
+    handleInteractionMove(e);
 }, { passive: true });
-canvas.addEventListener("touchend", endDrag);
+window.addEventListener("touchend", handleInteractionEnd);
 
 window.addEventListener("resize", resizeCanvas);
 
@@ -209,6 +209,7 @@ function update() {
 
         ctx.fillStyle = "#ccc";
         ctx.font = Math.floor(20 * scale) + "px Arial";
+        ctx.textAlign = "center";
         ctx.fillText("Kéo ngược và thả chú chim để bắn hạ khối hộp!", canvas.width / 2, canvas.height / 2);
 
         ctx.fillStyle = "#8ddb44";
@@ -306,10 +307,10 @@ function update() {
             ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
             ctx.fill();
         } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
+ctx.fillStyle = "#ff3333";
+ctx.beginPath();
+ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.fill();
 }
 let allDead = true;
 targets.forEach(t => {
