@@ -84,13 +84,13 @@
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
-            <button class="btn" id="startBtn">CHƠI NGAY</button>
+            <button class="btn" id="startBtn" onclick="triggerStart()">CHƠI NGAY</button>
         </div>
 
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" id="restartBtn">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn" onclick="triggerStart()">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -104,9 +104,6 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
-
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
 
 let gameState = "MENU"; 
 let score = 0;
@@ -161,31 +158,6 @@ function triggerStart() {
     gameOverScreen.classList.add("hidden");
 }
 
-startBtn.addEventListener("pointerdown", function(e) {
-    e.preventDefault();
-    triggerStart();
-});
-
-restartBtn.addEventListener("pointerdown", function(e) {
-    e.preventDefault();
-    triggerStart();
-});
-
-function endGame(isWin) {
-    gameState = "GAMEOVER";
-    gameOverScreen.classList.remove("hidden");
-    
-    if (isWin) {
-        gameOverTitle.textContent = "CHIẾN THẮNG!";
-        gameOverTitle.style.color = "#8ddb44";
-        finalText.innerHTML = "Tổng số điểm của bạn: " + score;
-    } else {
-        gameOverTitle.textContent = "GAME OVER";
-        gameOverTitle.style.color = "#ff3333";
-        finalText.innerHTML = "Bạn đã hết mạng! Điểm số: " + score;
-    }
-}
-
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     let clientX = e.clientX;
@@ -194,6 +166,9 @@ function getMousePos(e) {
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
     }
     
     return {
@@ -239,8 +214,8 @@ canvas.addEventListener("mousedown", startDrag);
 canvas.addEventListener("mousemove", drag);
 window.addEventListener("mouseup", endDrag);
 
-canvas.addEventListener("touchstart", function(e) { startDrag(e); }, { passive: true });
-canvas.addEventListener("touchmove", function(e) { drag(e); }, { passive: true });
+canvas.addEventListener("touchstart", function(e) { startDrag(e); });
+canvas.addEventListener("touchmove", function(e) { drag(e); });
 window.addEventListener("touchend", endDrag);
 
 window.addEventListener("resize", () => {
@@ -339,23 +314,24 @@ function update() {
             ctx.beginPath();
             ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
             ctx.fill();
-} else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-ctx.fillStyle = "#ff3333";
-ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
-}
-let allDead = true;
-targets.forEach(t => {
-if (t.alive) {
-allDead = false;
-if (checkCollision(bird, t)) {
-t.alive = false;
-score += 100;
-}
-ctx.fillStyle = "#8ddb44";
-ctx.fillRect(t.x, t.y, t.width, t.height);
-ctx.strokeStyle = "#558822";
+        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        let allDead = true;
+        targets.forEach(t => {
+            if (t.alive) {
+                allDead = false;
+                if (checkCollision(bird, t)) {
+                    t.alive = false;
+                    score += 100;
+                }
+                ctx.fillStyle = "#8ddb44";
+                ctx.fillRect(t.x, t.y, t.width, t.height);
+                ctx.strokeStyle = "#558822";
 ctx.lineWidth = 2 * scale;
 ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
