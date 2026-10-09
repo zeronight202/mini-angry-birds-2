@@ -10,7 +10,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #222;
+            background: #111;
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -23,7 +23,6 @@
             height: 100vh;
         }
         canvas {
-            background: #70c5ce;
             display: block;
             width: 100%;
             height: 100%;
@@ -49,6 +48,8 @@ let scale = 1;
 let sling = { x: 0, y: 0, radius: 15 };
 let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
 let targets = [];
+let decorationTrees = [];
+let clouds = [];
 let buttonRect = { x: 0, y: 0, w: 220, h: 55 };
 
 function resizeCanvas() {
@@ -76,15 +77,31 @@ function resizeCanvas() {
     buttonRect.x = (canvas.width - buttonRect.w) / 2;
     buttonRect.y = (canvas.height / 2) + (40 * scale);
 
-    const startX = canvas.width - (350 * scale);
-    const boxW = 55 * scale;
-    const boxH = 65 * scale;
+    const startX = canvas.width * 0.75;
+    const boxW = 50 * scale;
+    const boxH = 60 * scale;
     
     targets = [
-        { x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
-        { x: startX + boxW + (15 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
-        { x: startX + (boxW / 2) + (7 * scale), y: groundY - (boxH * 2) - (5 * scale), width: boxW, height: boxH, alive: true }
+        { type: "wood", x: startX, y: groundY - boxH, width: boxW, height: boxH, alive: true },
+        { type: "pig", x: startX + boxW/2 - (15*scale), y: groundY - boxH - (30*scale), width: 30*scale, height: 30*scale, alive: true, radius: 15*scale },
+        { type: "wood", x: startX + boxW + (20 * scale), y: groundY - boxH, width: boxW, height: boxH, alive: true },
+        { type: "pig", x: startX + boxW + (20 * scale) + boxW/2 - (15*scale), y: groundY - boxH - (30*scale), width: 30*scale, height: 30*scale, alive: true, radius: 15*scale },
+        { type: "ice", x: startX + (boxW / 2) + (10 * scale), y: groundY - (boxH * 2) - (10 * scale), width: boxW, height: boxH, alive: true }
     ];
+
+    decorationTrees = [
+        { x: canvas.width * 0.05, y: groundY, r: 40 * scale },
+        { x: canvas.width * 0.45, y: groundY, r: 35 * scale },
+        { x: canvas.width * 0.90, y: groundY, r: 50 * scale }
+    ];
+
+    if(clouds.length === 0) {
+        clouds = [
+            { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
+            { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
+            { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
+        ];
+    }
 }
 
 function triggerStart() {
@@ -125,7 +142,7 @@ function handleInteractionStart(e) {
     } else if (gameState === "PLAYING") {
         if (bird.isLaunched || lives <= 0) return;
         const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-        if (dist < bird.radius + (30 * scale)) {
+        if (dist < bird.radius + (35 * scale)) {
             bird.isDragging = true;
         }
     }
@@ -151,23 +168,21 @@ function handleInteractionEnd() {
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    bird.vx = (sling.x - bird.x) * 0.24;
-    bird.vy = (sling.y - bird.y) * 0.24;
+    bird.vx = (sling.x - bird.x) * 0.22;
+    bird.vy = (sling.y - bird.y) * 0.22;
 }
 
 canvas.addEventListener("mousedown", handleInteractionStart);
 canvas.addEventListener("mousemove", handleInteractionMove);
 window.addEventListener("mouseup", handleInteractionEnd);
 
-canvas.addEventListener("touchstart", function(e) {
-    handleInteractionStart(e);
-}, { passive: true });
-canvas.addEventListener("touchmove", function(e) {
-    handleInteractionMove(e);
-}, { passive: true });
+canvas.addEventListener("touchstart", function(e) { handleInteractionStart(e); }, { passive: true });
+canvas.addEventListener("touchmove", function(e) { handleInteractionMove(e); }, { passive: true });
 window.addEventListener("touchend", handleInteractionEnd);
 
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", () => {
+    resizeCanvas();
+});
 
 function resetBird() {
     bird.x = sling.x;
@@ -179,19 +194,111 @@ function resetBird() {
 
 function checkCollision(b, t) {
     if (!t.alive) return false;
-    let closestX = Math.max(t.x, Math.min(b.x, t.x + t.width));
-    let closestY = Math.max(t.y, Math.min(b.y, t.y + t.height));
-    let distance = Math.hypot(b.x - closestX, b.y - closestY);
-    return distance < b.radius;
+    if (t.type === "pig") {
+        let distance = Math.hypot(b.x - t.x, b.y - t.y);
+        return distance < b.radius + t.radius;
+    } else {
+        let closestX = Math.max(t.x, Math.min(b.x, t.x + t.width));
+        let closestY = Math.max(t.y, Math.min(b.y, t.y + t.height));
+        let distance = Math.hypot(b.x - closestX, b.y - closestY);
+        return distance < b.radius;
+    }
+}
+
+function drawBird(x, y, r) {
+    ctx.fillStyle = "#ff3333";
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#990000";
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(x + r*0.4, y - r*0.2, r*0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(x + r*0.5, y - r*0.2, r*0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath();
+    ctx.moveTo(x + r*0.8, y);
+    ctx.lineTo(x + r*1.3, y + r*0.1);
+    ctx.lineTo(x + r*0.8, y + r*0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawPig(x, y, r) {
+    ctx.fillStyle = "#8ddb44";
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#558822";
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+
+    ctx.fillStyle = "#6cb82d";
+    ctx.beginPath();
+    ctx.arc(x, y + r*0.1, r*0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(x - r*0.15, y, 4*scale, 4*scale);
+    ctx.fillRect(x + r*0.05, y, 4*scale, 4*scale);
+
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(x - r*0.3, y - r*0.3, r*0.22, 0, Math.PI * 2);
+    ctx.arc(x + r*0.3, y - r*0.3, r*0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(x - r*0.25, y - r*0.3, r*0.08, 0, Math.PI * 2);
+    ctx.arc(x + r*0.35, y - r*0.3, r*0.08, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 function update() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#1a80b8");
+    gradient.addColorStop(0.6, "#70c5ce");
+    gradient.addColorStop(1, "#9be2e6");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#654321";
+    clouds.forEach(c => {
+        c.x += c.speed;
+        if (c.x > canvas.width) c.x = -c.w;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.w * 0.3, 0, Math.PI * 2);
+        ctx.arc(c.x + c.w * 0.25, e = c.y - c.w * 0.1, c.w * 0.35, 0, Math.PI * 2);
+        ctx.arc(c.x + c.w * 0.5, c.y, c.w * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    decorationTrees.forEach(tree => {
+        ctx.fillStyle = "#3a5f16";
+        ctx.beginPath();
+        ctx.arc(tree.x, tree.y - tree.r*0.6, tree.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#497c1a";
+        ctx.beginPath();
+        ctx.arc(tree.x - tree.r*0.2, tree.y - tree.r*0.8, tree.r * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.fillStyle = "#6d4c20";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+    ctx.fillStyle = "#5c9e32";
+    ctx.fillRect(0, groundY, canvas.width, 15 * scale);
 
-    ctx.strokeStyle = "#4a2c11";
+    ctx.strokeStyle = "#422813";
     ctx.lineWidth = 8 * scale;
     ctx.beginPath();
     ctx.moveTo(sling.x, sling.y);
@@ -199,135 +306,116 @@ function update() {
     ctx.stroke();
 
     if (gameState === "MENU") {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.fillStyle = "#ff3333";
         ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
         ctx.textAlign = "center";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 6;
         ctx.fillText("ANGRY BIRDS MINI", canvas.width / 2, canvas.height / 3);
+        ctx.shadowBlur = 0;
 
-        ctx.fillStyle = "#ccc";
+        ctx.fillStyle = "#fff";
         ctx.font = Math.floor(20 * scale) + "px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Kéo ngược và thả chú chim để bắn hạ khối hộp!", canvas.width / 2, canvas.height / 2);
-
-        ctx.fillStyle = "#8ddb44";
-        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
-
-        ctx.fillStyle = "#222";
-        ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
-    } else if (gameState === "GAMEOVER") {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        let allDead = true;
-        targets.forEach(t => { if (t.alive) allDead = false; });
-
-        ctx.fillStyle = allDead ? "#8ddb44" : "#ff3333";
-        ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(allDead ? "CHIẾN THẮNG!" : "GAME OVER", canvas.width / 2, canvas.height / 3);
-
-        ctx.fillStyle = "#fff";
-        ctx.font = Math.floor(24 * scale) + "px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(allDead ? "Tổng số điểm của bạn: " + score : "Hết lượt bắn! Điểm số: " + score, canvas.width / 2, canvas.height / 2);
-
-        ctx.fillStyle = "#8ddb44";
-        ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
-
-        ctx.fillStyle = "#222";
-        ctx.font = "bold " + Math.floor(22 * scale) + "px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(allDead ? "CHƠI LẠI" : "THỬ LẠI", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
-    } else if (gameState === "PLAYING") {
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 24px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
-
-        for (let i = 0; i < lives - 1; i++) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(sling.x - 45 - (i * 35), groundY - bird.radius, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        if (bird.isDragging) {
-            ctx.strokeStyle = "#4a2c11";
-            ctx.lineWidth = 5 * scale;
-            ctx.beginPath();
-            ctx.moveTo(sling.x, sling.y);
-            ctx.lineTo(bird.x, bird.y);
-            ctx.stroke();
-
-            let simX = bird.x;
-            let simY = bird.y;
-            let simVx = (sling.x - bird.x) * 0.24;
-            let simVy = (sling.y - bird.y) * 0.24;
-            
-            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-            for (let i = 0; i < 30; i += 2) {
-                simX += simVx * 2;
-                simY += simVy * 2;
-                simVy += 0.22 * 2;
-                if (simY >= groundY || simX > canvas.width || simX < 0) break;
-                ctx.beginPath();
-                ctx.arc(simX, simY, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        if (bird.isLaunched) {
-            bird.x += bird.vx;
-            bird.y += bird.vy;
-            bird.vy += 0.22;
-
-            if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
-                bird.isLaunched = false;
-                lives--;
-                
-                let currentAllDead = true;
-                targets.forEach(t => { if (t.alive) currentAllDead = false; });
-                
-                if (!currentAllDead && lives === 0) {
-                    gameState = "GAMEOVER";
-                } else if (!currentAllDead) {
-                    resetBird();
-                }
-            }
-        }
-
-        if (!bird.isLaunched && lives > 0) {
-            ctx.fillStyle = "#ff3333";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
-ctx.fillStyle = "#ff3333";
+ctx.fillText("Bắn hạ heo xanh và phá hủy công trình!", canvas.width / 2, canvas.height / 2);
+ctx.fillStyle = "#8ddb44";
+ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
+ctx.fillStyle = "#222";
+ctx.font = "bold " + Math.floor(20 * scale) + "px Arial";
+ctx.fillText("CHƠI NGAY", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
+drawBird(sling.x, sling.y, 18 * scale);
+} else if (gameState === "GAMEOVER") {
+ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+let win = true;
+targets.forEach(t => { if (t.type === "pig" && t.alive) win = false; });
+ctx.fillStyle = win ? "#8ddb44" : "#ff3333";
+ctx.font = "bold " + Math.floor(54 * scale) + "px Arial";
+ctx.textAlign = "center";
+ctx.fillText(win ? "CHIẾN THẮNG!" : "GAME OVER", canvas.width / 2, canvas.height / 3);
+ctx.fillStyle = "#fff";
+ctx.font = Math.floor(24 * scale) + "px Arial";
+ctx.fillText(win ? "Tuyệt vời! Số điểm của bạn: " + score : "Thử lại lượt bắn! Điểm số: " + score, canvas.width / 2, canvas.height / 2);
+ctx.fillStyle = "#8ddb44";
+ctx.fillRect(buttonRect.x, buttonRect.y, buttonRect.w, buttonRect.h);
+ctx.fillStyle = "#222";
+ctx.font = "bold " + Math.floor(20 * scale) + "px Arial";
+ctx.fillText(win ? "CHƠI LẠI" : "THỬ LẠI", canvas.width / 2, buttonRect.y + (buttonRect.h / 2) + (7 * scale));
+} else if (gameState === "PLAYING") {
+ctx.fillStyle = "#fff";
+ctx.font = "bold 24px Arial";
+ctx.textAlign = "center";
+ctx.fillText("ĐIỂM SỐ: " + score, canvas.width / 2, 45);
+for (let i = 0; i < lives - 1; i++) {
+drawBird(sling.x - 45 - (i * 38), groundY - (18 * scale), 15 * scale);
+}
+if (bird.isDragging) {
+ctx.strokeStyle = "#2b1609";
+ctx.lineWidth = 5 * scale;
 ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+ctx.moveTo(sling.x, sling.y);
+ctx.lineTo(bird.x, bird.y);
+ctx.stroke();
+let simX = bird.x;
+let simY = bird.y;
+let simVx = (sling.x - bird.x) * 0.22;
+let simVy = (sling.y - bird.y) * 0.22;
+ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+for (let i = 0; i < 30; i += 2) {
+simX += simVx * 2;
+simY += simVy * 2;
+simVy += 0.22 * 2;
+if (simY >= groundY || simX > canvas.width || simX < 0) break;
+ctx.beginPath();
+ctx.arc(simX, simY, 4 * scale, 0, Math.PI * 2);
 ctx.fill();
 }
-let allDead = true;
+}
+if (bird.isLaunched) {
+bird.x += bird.vx;
+bird.y += bird.vy;
+bird.vy += 0.22;
+if (bird.y + bird.radius >= groundY || bird.x > canvas.width || bird.x < 0) {
+bird.isLaunched = false;
+lives--;
+let pigAlive = false;
+targets.forEach(t => { if (t.type === "pig" && t.alive) pigAlive = true; });
+if (pigAlive && lives === 0) {
+gameState = "GAMEOVER";
+} else if (!pigAlive) {
+gameState = "GAMEOVER";
+} else {
+resetBird();
+}
+}
+}
+if (!bird.isLaunched && lives > 0) {
+drawBird(bird.x, bird.y, bird.radius);
+} else if (bird.isLaunched && bird.y + bird.radius < groundY) {
+drawBird(bird.x, bird.y, bird.radius);
+}
+let pigAlive = false;
 targets.forEach(t => {
 if (t.alive) {
-allDead = false;
+if (t.type === "pig") pigAlive = true;
 if (checkCollision(bird, t)) {
 t.alive = false;
 score += 100;
 }
-ctx.fillStyle = "#8ddb44";
+if (t.type === "pig") {
+drawPig(t.x, t.y, t.radius);
+} else {
+ctx.fillStyle = t.type === "wood" ? "#bf8339" : "#a1d7f0";
 ctx.fillRect(t.x, t.y, t.width, t.height);
-ctx.strokeStyle = "#558822";
+ctx.strokeStyle = t.type === "wood" ? "#8a571c" : "#60abcf";
 ctx.lineWidth = 2 * scale;
 ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
+}
 });
-if (allDead && targets.length > 0) {
+if (!pigAlive && targets.length > 0) {
 gameState = "GAMEOVER";
 }
 }
