@@ -33,7 +33,7 @@
         }
         canvas {
             display: block;
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            background: #70c5ce;
         }
         .overlay {
             position: absolute;
@@ -92,18 +92,16 @@
 <body>
 
     <div id="gameWrapper">
-        <!-- MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Kéo ngược và thả chú chim màu đỏ để bắn hạ toàn bộ khối hộp! Bạn có tổng cộng 3 chú chim thay phiên nhau.</p>
-            <button class="btn" onclick="startGame()">CHƠI NGAY</button>
+            <button class="btn" id="startBtn">CHƠI NGAY</button>
         </div>
 
-        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" onclick="restartGame()">CHƠI LẠI</button>
+            <button class="btn" id="restartBtn">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -118,9 +116,12 @@ const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
 
-// Kích thước logic cố định bên trong game để tính toán vật lý không bị lệch
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+
 const VIRTUAL_WIDTH = 1000;
 const VIRTUAL_HEIGHT = 500;
+let currentScale = 1;
 
 let gameState = "MENU"; 
 let score = 0;
@@ -131,21 +132,16 @@ const sling = { x: 180, y: 340, radius: 15 };
 let bird = { x: 180, y: 340, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched: false };
 let targets = [];
 
-// Hàm chuẩn hóa kích thước canvas vừa khít màn hình thiết bị (Không bị thu nhỏ thành khung chữ nhật)
 function fitCanvasToWindow() {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     
-    // Tính tỷ lệ để phóng to canvas tràn màn hình mà không làm biến dạng tỷ lệ logic
     const scaleX = windowWidth / VIRTUAL_WIDTH;
     const scaleY = windowHeight / VIRTUAL_HEIGHT;
-    const scaleToFit = Math.min(scaleX, scaleY);
+    currentScale = Math.min(scaleX, scaleY);
     
-    canvas.width = VIRTUAL_WIDTH * scaleToFit;
-    canvas.height = VIRTUAL_HEIGHT * scaleToFit;
-    
-    // Sử dụng cơ chế scale tự động của Canvas để đồng bộ mọi tọa độ bên dưới
-    ctx.setTransform(scaleToFit, 0, 0, scaleToFit, 0, 0);
+    canvas.width = VIRTUAL_WIDTH * currentScale;
+    canvas.height = VIRTUAL_HEIGHT * currentScale;
 }
 
 function initTargets() {
@@ -156,7 +152,11 @@ function initTargets() {
     ];
 }
 
-function startGame() {
+function triggerStart(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     gameState = "PLAYING";
     score = 0;
     lives = 3;
@@ -167,6 +167,12 @@ function startGame() {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 }
+
+startBtn.addEventListener("click", triggerStart);
+startBtn.addEventListener("touchstart", triggerStart);
+
+restartBtn.addEventListener("click", triggerStart);
+restartBtn.addEventListener("touchstart", triggerStart);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
@@ -183,11 +189,6 @@ function endGame(isWin) {
     }
 }
 
-function restartGame() {
-    startGame();
-}
-
-// Chuyển đổi tọa độ chạm thực tế của chuột/tay thành tọa độ logic bên trong game
 function getCanvasMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     let clientX = 0;
@@ -196,18 +197,17 @@ function getCanvasMousePos(e) {
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
     } else {
         clientX = e.clientX;
         clientY = e.clientY;
     }
     
-    // Tính toán tỷ lệ co giãn thực tế
-    const scaleX = VIRTUAL_WIDTH / rect.width;
-    const scaleY = VIRTUAL_HEIGHT / rect.height;
-    
     return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
+        x: (clientX - rect.left) / currentScale,
+        y: (clientY - rect.top) / currentScale
     };
 }
 
@@ -215,7 +215,6 @@ function startDrag(e) {
     if (gameState !== "PLAYING" || bird.isLaunched || lives <= 0) return;
     const pos = getCanvasMousePos(e);
     const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-    // Tăng bán kính tương tác để dễ bấm kéo trên cả điện thoại màn hình nhỏ
     if (dist < bird.radius + 35) {
         bird.isDragging = true;
     }
@@ -229,7 +228,6 @@ function drag(e) {
     const distY = pos.y - sling.y;
     const angle = Math.atan2(distY, distX);
     
-    // Giới hạn tầm kéo căng của dây cao su
     const dist = Math.min(Math.hypot(distX, distY), 110);
 
     bird.x = sling.x + Math.cos(angle) * dist;
@@ -241,17 +239,14 @@ function endDrag() {
     bird.isDragging = false;
     bird.isLaunched = true;
 
-    // Lực bắn (vx, vy) được cân bằng chuẩn xác để ngắm bắn mượt mà
     bird.vx = (sling.x - bird.x) * 0.22;
     bird.vy = (sling.y - bird.y) * 0.22;
 }
 
-// Lắng nghe sự kiện chuột trên PC
 canvas.addEventListener("mousedown", startDrag);
 canvas.addEventListener("mousemove", drag);
 window.addEventListener("mouseup", endDrag);
 
-// Lắng nghe sự kiện cảm ứng trên Điện thoại/Máy tính bảng
 canvas.addEventListener("touchstart", function(e) { startDrag(e); }, { passive: true });
 canvas.addEventListener("touchmove", function(e) { drag(e); }, { passive: true });
 window.addEventListener("touchend", endDrag);
@@ -275,19 +270,19 @@ function checkCollision(b, t) {
 }
 
 function update() {
-    ctx.clearRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Vẽ nền bầu trời giả lập (Xử lý khoảng trống rìa ngoài canvas)
+    ctx.save();
+    ctx.scale(currentScale, currentScale);
+
     ctx.fillStyle = "#70c5ce";
     ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
-    // Vẽ mặt đất màu nâu vững chãi
     ctx.fillStyle = "#654321";
     ctx.fillRect(0, groundY, VIRTUAL_WIDTH, VIRTUAL_HEIGHT - groundY);
     ctx.fillStyle = "#558822";
-    ctx.fillRect(0, groundY, VIRTUAL_WIDTH, 12); // Lớp cỏ xanh trên đất
+    ctx.fillRect(0, groundY, VIRTUAL_WIDTH, 12); 
 
-    // Vẽ trụ súng cao su màu gỗ độc lập
     ctx.strokeStyle = "#4a2c11";
     ctx.lineWidth = 6;
     ctx.beginPath();
@@ -296,13 +291,11 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
-        // Hiển thị giao diện văn bản chữ điểm số phía trên
         ctx.fillStyle = "#fff";
         ctx.font = "bold 24px Arial";
         ctx.textAlign = "center";
         ctx.fillText("ĐIỂM SỐ: " + score, VIRTUAL_WIDTH / 2, 45);
 
-        // Vẽ hàng chim dự phòng xếp hàng phía sau bệ bắn
         for (let i = 0; i < lives - 1; i++) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
@@ -313,38 +306,37 @@ function update() {
             ctx.stroke();
         }
 
-        // Vẽ dây súng cao su đàn hồi và vệt chấm ngắm bắn định hướng
         if (bird.isDragging) {
             ctx.strokeStyle = "#221205";
             ctx.lineWidth = 5;
             ctx.beginPath();
             ctx.moveTo(sling.x, sling.y);
-ctx.lineTo(bird.x, bird.y);
-ctx.stroke();
-// Tính toán mô phỏng quỹ đạo bay chấm tròn
-let simX = bird.x;
-let simY = bird.y;
-let simVx = (sling.x - bird.x) * 0.22;
-let simVy = (sling.y - bird.y) * 0.22;
-ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-for (let i = 0; i < 30; i++) {
-simX += simVx;
-simY += simVy;
-simVy += 0.22; // Trọng lực ảo định hướng
-if (simY >= groundY) break;
-if (i % 2 === 0) {
-ctx.beginPath();
-ctx.arc(simX, simY, 4, 0, Math.PI * 2);
-ctx.fill();
-}
-}
-}
-// Cập nhật chuyển động vật lý khi chim bay
-if (bird.isLaunched) {
-bird.x += bird.vx;
+            ctx.lineTo(bird.x, bird.y);
+            ctx.stroke();
+
+            let simX = bird.x;
+            let simY = bird.y;
+            let simVx = (sling.x - bird.x) * 0.22;
+            let simVy = (sling.y - bird.y) * 0.22;
+            
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            for (let i = 0; i < 30; i++) {
+                simX += simVx;
+                simY += simVy;
+                simVy += 0.22; 
+                if (simY >= groundY) break;
+                if (i % 2 === 0) {
+                    ctx.beginPath();
+                    ctx.arc(simX, simY, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        if (bird.isLaunched) {
+            bird.x += bird.vx;
 bird.y += bird.vy;
-bird.vy += 0.22; // Trọng lực rơi tự do chuẩn
-// Xử lý khi chim bay ra ngoài biên hoặc chạm đất rơi xuống
+bird.vy += 0.22;
 if (bird.y + bird.radius >= groundY || bird.x > VIRTUAL_WIDTH || bird.x < 0) {
 bird.isLaunched = false;
 lives--;
@@ -357,7 +349,6 @@ resetBird();
 }
 }
 }
-// Vẽ chim đỏ ngắm bắn chính thức
 if (lives > 0 && (!bird.isLaunched || (bird.isLaunched && bird.y + bird.radius < groundY))) {
 ctx.fillStyle = "#ff3333";
 ctx.beginPath();
@@ -367,7 +358,6 @@ ctx.strokeStyle = "#b31a1a";
 ctx.lineWidth = 2;
 ctx.stroke();
 }
-// Xử lý kiểm tra va chạm cấu trúc và vẽ mục tiêu
 let allDead = true;
 targets.forEach(t => {
 if (t.alive) {
@@ -387,7 +377,6 @@ if (allDead && targets.length > 0) {
 endGame(true);
 }
 } else {
-// Trạng thái menu hoặc gameover: vẽ chim nằm yên tĩnh trên bệ súng cao su
 ctx.fillStyle = "#ff3333";
 ctx.beginPath();
 ctx.arc(sling.x, sling.y, bird.radius, 0, Math.PI * 2);
@@ -396,9 +385,10 @@ ctx.strokeStyle = "#b31a1a";
 ctx.lineWidth = 2;
 ctx.stroke();
 }
+ctx.restore();
 requestAnimationFrame(update);
 }
-// Khởi chạy đồng bộ màn hình lập tức
 fitCanvasToWindow();
 initTargets();
 update();
+
