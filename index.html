@@ -28,25 +28,6 @@
             width: 100%;
             height: 100%;
         }
-        #uiOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-        }
-        .hud-text {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 1px 1px 3px black;
-        }
         .overlay {
             position: absolute;
             top: 0;
@@ -84,7 +65,6 @@
             cursor: pointer;
             box-shadow: 0 5px 0 #558822;
             transition: 0.1s;
-            pointer-events: auto;
         }
         .btn:hover {
             background: #a2e85c;
@@ -101,10 +81,6 @@
 <body>
 
     <div id="gameContainer">
-        <div id="uiOverlay" class="hidden">
-            <div class="hud-text">Điểm: <span id="scoreText">0</span></div>
-        </div>
-
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
@@ -128,8 +104,6 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
-const uiOverlay = document.getElementById("uiOverlay");
-const scoreText = document.getElementById("scoreText");
 
 const startBtn = document.getElementById("startBtn");
 const restartBtn = document.getElementById("restartBtn");
@@ -171,7 +145,6 @@ function triggerStart() {
     gameState = "PLAYING";
     score = 0;
     lives = 3;
-    scoreText.textContent = score;
     
     resizeCanvas();
     initTargets();
@@ -179,16 +152,23 @@ function triggerStart() {
     
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
-    uiOverlay.classList.remove("hidden");
 }
 
 startBtn.addEventListener("click", triggerStart);
+startBtn.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    triggerStart();
+}, { passive: false });
+
 restartBtn.addEventListener("click", triggerStart);
+restartBtn.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    triggerStart();
+}, { passive: false });
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
     gameOverScreen.classList.remove("hidden");
-    uiOverlay.classList.add("hidden");
     
     if (isWin) {
         gameOverTitle.textContent = "CHIẾN THẮNG!";
@@ -209,6 +189,9 @@ function getMousePos(e) {
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
     }
     
     return {
@@ -221,7 +204,7 @@ function startDrag(e) {
     if (gameState !== "PLAYING" || bird.isLaunched || lives <= 0) return;
     const pos = getMousePos(e);
     const dist = Math.hypot(pos.x - bird.x, pos.y - bird.y);
-    if (dist < bird.radius + 25) {
+    if (dist < bird.radius + 30) {
         bird.isDragging = true;
     }
 }
@@ -254,8 +237,8 @@ canvas.addEventListener("mousedown", startDrag);
 canvas.addEventListener("mousemove", drag);
 window.addEventListener("mouseup", endDrag);
 
-canvas.addEventListener("touchstart", startDrag, { passive: true });
-canvas.addEventListener("touchmove", drag, { passive: true });
+canvas.addEventListener("touchstart", function(e) { startDrag(e); }, { passive: true });
+canvas.addEventListener("touchmove", function(e) { drag(e); }, { passive: true });
 window.addEventListener("touchend", endDrag);
 
 window.addEventListener("resize", () => {
@@ -295,6 +278,11 @@ function update() {
     ctx.stroke();
 
     if (gameState === "PLAYING") {
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Điểm: " + score, canvas.width / 2, 40);
+
         for (let i = 0; i < lives - 1; i++) {
             ctx.fillStyle = "#ff3333";
             ctx.beginPath();
@@ -346,13 +334,14 @@ function update() {
                 } else if (!currentAllDead) {
                     resetBird();
                 }
-}
-}
-if (!bird.isLaunched && lives > 0) {
-ctx.fillStyle = "#ff3333";
-ctx.beginPath();
-ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-ctx.fill();
+            }
+        }
+
+        if (!bird.isLaunched && lives > 0) {
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
 } else if (bird.isLaunched && bird.y + bird.radius < groundY) {
 ctx.fillStyle = "#ff3333";
 ctx.beginPath();
@@ -366,7 +355,6 @@ allDead = false;
 if (checkCollision(bird, t)) {
 t.alive = false;
 score += 100;
-scoreText.textContent = score;
 }
 ctx.fillStyle = "#8ddb44";
 ctx.fillRect(t.x, t.y, t.width, t.height);
@@ -387,3 +375,17 @@ requestAnimationFrame(update);
 }
 resizeCanvas();
 update();
+
+
+<layout>
+feedbackBlock {
+  feedbackQuestion(
+    question="Giao diện game hiển thị thế nào?",
+    options=["Vừa khít màn hình", "Bị lệch vật thể", "Vẫn bị lỗi trống trơn"]
+  )
+  feedbackQuestion(
+    question="Nút CHƠI NGAY đã bấm được chưa?",
+    options=["Bấm được rồi", "Vẫn chưa bấm được", "Không phản hồi trên điện thoại"]
+  )
+}
+</layout>
