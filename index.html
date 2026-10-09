@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angry Birds Mini Fullscreen Fix</title>
+    <title>Angry Birds Fix Triệt Để</title>
     <style>
         body, html {
             margin: 0;
@@ -81,12 +81,14 @@
 <body>
 
     <div id="gameContainer">
+        <!-- MENU BẮT ĐẦU -->
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Bắn hạ toàn bộ khối hộp với 3 chú chim dự phòng!</p>
             <button class="btn" onclick="startGame()">CHƠI NGAY</button>
         </div>
 
+        <!-- MÀN HÌNH KẾT THÚC -->
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
@@ -172,12 +174,15 @@ function restartGame() {
 
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
-    let clientX = e.clientX;
-    let clientY = e.clientY;
+    let clientX = 0;
+    let clientY = 0;
     
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
     }
     
     return {
@@ -343,9 +348,9 @@ function update() {
                     t.alive = false;
                     score += 100;
                 }
-                ctx.fillStyle = "#8ddb44";
-                ctx.fillRect(t.x, t.y, t.width, t.height);
-                ctx.strokeStyle = "#558822";
+ctx.fillStyle = "#8ddb44";
+ctx.fillRect(t.x, t.y, t.width, t.height);
+ctx.strokeStyle = "#558822";
 ctx.strokeRect(t.x, t.y, t.width, t.height);
 }
 });
