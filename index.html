@@ -23,7 +23,6 @@
             height: 100vh;
         }
         canvas {
-            background: #70c5ce;
             display: block;
             width: 100%;
             height: 100%;
@@ -119,7 +118,6 @@ let bird = { x: 0, y: 0, radius: 15, vx: 0, vy: 0, isDragging: false, isLaunched
 let targets = [];
 let decorationTrees = [];
 let clouds = [];
-let buttonRect = { x: 0, y: 0, w: 220, h: 55 };
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -141,11 +139,6 @@ function resizeCanvas() {
         bird.radius = 18 * scale;
     }
 
-    buttonRect.w = 220 * scale;
-    buttonRect.h = 55 * scale;
-    buttonRect.x = (canvas.width - buttonRect.w) / 2;
-    buttonRect.y = (canvas.height / 2) + (40 * scale);
-
     const startX = canvas.width * 0.75;
     const boxW = 50 * scale;
     const boxH = 60 * scale;
@@ -164,13 +157,11 @@ function resizeCanvas() {
         { x: canvas.width * 0.90, y: groundY, r: 50 * scale }
     ];
 
-    if (clouds.length === 0) {
-        clouds = [
-            { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
-            { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
-            { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
-        ];
-    }
+    clouds = [
+        { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
+        { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
+        { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
+    ];
 }
 
 function triggerStart() {
@@ -335,14 +326,16 @@ function drawPig(x, y, r) {
     ctx.arc(x - r*0.3, y - r*0.2, r*0.2, 0, Math.PI * 2);
     ctx.arc(x + r*0.3, y - r*0.2, r*0.2, 0, Math.PI * 2);
     ctx.fill();
-ctx.fillStyle = "#000";
-ctx.beginPath();
-ctx.arc(x - r0.25, y - r0.2, r0.07, 0, Math.PI * 2);
-ctx.arc(x + r0.35, y - r0.2, r0.07, 0, Math.PI * 2);
-ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(x - r*0.25, y - r*0.2, r*0.07, 0, Math.PI * 2);
+    ctx.arc(x + r*0.35, y - r*0.2, r*0.07, 0, Math.PI * 2);
+    ctx.fill();
 }
+
 function update() {
-ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
 let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
 gradient.addColorStop(0, "#1a80b8");
 gradient.addColorStop(0.6, "#70c5ce");
@@ -381,6 +374,9 @@ ctx.lineTo(sling.x, groundY);
 ctx.stroke();
 if (gameState === "MENU") {
 drawBird(sling.x, sling.y, 18 * scale);
+} else if (gameState === "GAMEOVER") {
+let win = true;
+targets.forEach(t => { if (t.type === "pig" && t.alive) win = false; });
 } else if (gameState === "PLAYING") {
 ctx.fillStyle = "#fff";
 ctx.font = "bold 24px Arial";
@@ -398,8 +394,8 @@ ctx.lineTo(bird.x, bird.y);
 ctx.stroke();
 let simX = bird.x;
 let simY = bird.y;
-let simVx = (sling.x - bird.x) * 0.22;
-let simVy = (sling.y - bird.y) * 0.22;
+let simVx = (sling.x - bird.x) * 0.24;
+let simVy = (sling.y - bird.y) * 0.24;
 ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
 for (let i = 0; i < 30; i += 2) {
 simX += simVx * 2;
