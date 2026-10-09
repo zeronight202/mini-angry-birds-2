@@ -10,7 +10,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #111;
+            background: #222;
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -96,13 +96,11 @@ function resizeCanvas() {
         { x: canvas.width * 0.90, y: groundY, r: 50 * scale }
     ];
 
-    if(clouds.length === 0) {
-        clouds = [
-            { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
-            { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
-            { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
-        ];
-    }
+    clouds = [
+        { x: canvas.width * 0.1, y: canvas.height * 0.15, speed: 0.2 * scale, w: 90 * scale },
+        { x: canvas.width * 0.5, y: canvas.height * 0.08, speed: 0.15 * scale, w: 120 * scale },
+        { x: canvas.width * 0.8, y: canvas.height * 0.2, speed: 0.25 * scale, w: 80 * scale }
+    ];
 }
 
 function triggerStart() {
@@ -359,8 +357,8 @@ ctx.lineTo(bird.x, bird.y);
 ctx.stroke();
 let simX = bird.x;
 let simY = bird.y;
-let simVx = (sling.x - bird.x) * 0.22;
-let simVy = (sling.y - bird.y) * 0.22;
+let simVx = (sling.x - bird.x) * 0.24;
+let simVy = (sling.y - bird.y) * 0.24;
 ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
 for (let i = 0; i < 30; i += 2) {
 simX += simVx * 2;
