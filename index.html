@@ -46,7 +46,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10;
+            z-index: 10000;
             color: white;
             text-align: center;
             padding: 20px;
@@ -95,13 +95,13 @@
         <div id="startScreen" class="overlay">
             <h1>ANGRY BIRDS MINI</h1>
             <p>Kéo ngược và thả chú chim màu đỏ để bắn hạ toàn bộ khối hộp! Bạn có tổng cộng 3 chú chim thay phiên nhau.</p>
-            <button class="btn" id="startBtn">CHƠI NGAY</button>
+            <button class="btn" onclick="triggerStart(event)">CHƠI NGAY</button>
         </div>
 
         <div id="gameOverScreen" class="overlay hidden">
             <h1 id="gameOverTitle">CHIẾN THẮNG!</h1>
             <p id="finalText">Tổng số điểm của bạn: 0</p>
-            <button class="btn" id="restartBtn">CHƠI LẠI</button>
+            <button class="btn" onclick="triggerStart(event)">CHƠI LẠI</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -115,9 +115,6 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const finalText = document.getElementById("finalText");
-
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
 
 const VIRTUAL_WIDTH = 1000;
 const VIRTUAL_HEIGHT = 500;
@@ -167,12 +164,6 @@ function triggerStart(e) {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 }
-
-startBtn.addEventListener("click", triggerStart);
-startBtn.addEventListener("touchstart", triggerStart);
-
-restartBtn.addEventListener("click", triggerStart);
-restartBtn.addEventListener("touchstart", triggerStart);
 
 function endGame(isWin) {
     gameState = "GAMEOVER";
@@ -335,12 +326,14 @@ function update() {
 
         if (bird.isLaunched) {
             bird.x += bird.vx;
-bird.y += bird.vy;
-bird.vy += 0.22;
-if (bird.y + bird.radius >= groundY || bird.x > VIRTUAL_WIDTH || bird.x < 0) {
-bird.isLaunched = false;
-lives--;
-let currentAllDead = true;
+            bird.y += bird.vy;
+            bird.vy += 0.22; 
+
+            if (bird.y + bird.radius >= groundY || bird.x > VIRTUAL_WIDTH || bird.x < 0) {
+                bird.isLaunched = false;
+                lives--;
+                
+                let currentAllDead = true;
 targets.forEach(t => { if (t.alive) currentAllDead = false; });
 if (!currentAllDead && lives === 0) {
 endGame(false);
@@ -391,4 +384,3 @@ requestAnimationFrame(update);
 fitCanvasToWindow();
 initTargets();
 update();
-
